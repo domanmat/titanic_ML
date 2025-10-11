@@ -5,14 +5,19 @@ import matplotlib.pyplot as plt
 from itertools import combinations
 
 
-def visualize_survival_data(df):
+def visualize_survival_data(df, enable_visualization=True):
     """
     Create scatter plots for all 2-element combinations of parameters,
     showing Survived status with color and marker coding.
 
     Parameters:
     - df: pandas DataFrame with processed data
+    - enable_visualization: bool, if False the function returns without creating plots
     """
+    if not enable_visualization:
+        print("\nVisualization is disabled.")
+        return
+
     print("\n### VISUALIZING SURVIVAL DATA ###")
     print("=" * 60)
 
@@ -77,14 +82,14 @@ def visualize_survival_data(df):
         ax.set_xlabel(param1, fontsize=10)
         ax.set_ylabel(param2, fontsize=10)
         ax.set_title(f'{param1} vs {param2}', fontsize=11, fontweight='bold')
-        ax.legend(loc='best', fontsize=8)
         ax.grid(True, alpha=0.3)
 
     # Hide unused subplots
     for idx in range(n_plots, len(axes)):
         axes[idx].axis('off')
 
-    plt.tight_layout()
+    # Increase spacing between plots by 1.5x
+    plt.tight_layout(pad=3.0, h_pad=3.0, w_pad=3.0)
 
     # Save as PDF in the specified directory
     output_path = r"C:\Users\Mateusz\Downloads\titanic\Figure_1.pdf"
@@ -95,6 +100,104 @@ def visualize_survival_data(df):
     print("\n" + "=" * 60)
     print(f"Generated {n_plots} scatter plots showing survival patterns")
     print("=" * 60 + "\n")
+
+
+def decision_tree_age_split(df):
+    """
+    Create a single-node decision tree that splits passengers by age
+    to maximize homogeneity of the 'Survived' parameter.
+
+    Parameters:
+    - df: pandas DataFrame with processed data
+
+    Returns:
+    - best_age_threshold: optimal age value for splitting
+    - best_gini: Gini impurity at the optimal split
+    """
+    print("\n### DECISION TREE: AGE SPLIT OPTIMIZATION ###")
+    print("=" * 60)
+
+    # Filter out missing age values (-1)
+    df_valid = df[df['Age'] >= 0].copy()
+
+    print(f"Total passengers with valid age: {len(df_valid)}")
+    print(f"Age range: {df_valid['Age'].min()} to {df_valid['Age'].max()}")
+    print("\nOptimizing age threshold...")
+    print("-" * 60)
+
+    # Get unique age values to test as thresholds
+    unique_ages = sorted(df_valid['Age'].unique())
+
+    best_gini = float('inf')
+    best_age_threshold = None
+    best_split_info = None
+
+    # Iterate through all possible age thresholds
+    for age_threshold in unique_ages:
+        # Split data into two groups
+        left_group = df_valid[df_valid['Age'] <= age_threshold]
+        right_group = df_valid[df_valid['Age'] > age_threshold]
+
+        # Skip if either group is empty
+        if len(left_group) == 0 or len(right_group) == 0:
+            continue
+
+        # Calculate Gini impurity for each group
+        def gini_impurity(group):
+            if len(group) == 0:
+                return 0
+            survived_ratio = group['Survived'].sum() / len(group)
+            return 2 * survived_ratio * (1 - survived_ratio)
+
+        left_gini = gini_impurity(left_group)
+        right_gini = gini_impurity(right_group)
+
+        # Calculate weighted Gini impurity
+        n_left = len(left_group)
+        n_right = len(right_group)
+        n_total = n_left + n_right
+
+        weighted_gini = (n_left / n_total) * left_gini + (n_right / n_total) * right_gini
+
+        # Update best split if this is better
+        if weighted_gini < best_gini:
+            best_gini = weighted_gini
+            best_age_threshold = age_threshold
+            best_split_info = {
+                'left_group': left_group,
+                'right_group': right_group,
+                'left_gini': left_gini,
+                'right_gini': right_gini,
+                'n_left': n_left,
+                'n_right': n_right
+            }
+
+    # Display results
+    print(f"\nOptimal Age Threshold: {best_age_threshold} years")
+    print(f"Weighted Gini Impurity: {best_gini:.4f}")
+    print("\n" + "-" * 60)
+
+    if best_split_info:
+        left = best_split_info['left_group']
+        right = best_split_info['right_group']
+
+        print(f"\nLeft Group (Age <= {best_age_threshold}):")
+        print(f"  Size: {best_split_info['n_left']} passengers")
+        print(f"  Survived: {left['Survived'].sum()} ({left['Survived'].mean() * 100:.1f}%)")
+        print(f"  Died: {len(left) - left['Survived'].sum()} ({(1 - left['Survived'].mean()) * 100:.1f}%)")
+        print(f"  Gini Impurity: {best_split_info['left_gini']:.4f}")
+
+        print(f"\nRight Group (Age > {best_age_threshold}):")
+        print(f"  Size: {best_split_info['n_right']} passengers")
+        print(f"  Survived: {right['Survived'].sum()} ({right['Survived'].mean() * 100:.1f}%)")
+        print(f"  Died: {len(right) - right['Survived'].sum()} ({(1 - right['Survived'].mean()) * 100:.1f}%)")
+        print(f"  Gini Impurity: {best_split_info['right_gini']:.4f}")
+
+    print("\n" + "=" * 60)
+    print("Decision tree optimization complete!")
+    print("=" * 60 + "\n")
+
+    return best_age_threshold, best_gini
 
 
 def process_data(df):
@@ -264,14 +367,14 @@ df = pd.read_csv(file_path)
 
 # Inspect original data
 print("\n### ORIGINAL DATA INSPECTION ###")
-inspect_data(df, detailed=True)  # Change to False for summary only
+inspect_data(df, detailed=False)  # Change to False for summary only
 
 # Process the data
 processed_df = process_data(df)
 
 # Inspect processed data
 print("\n### PROCESSED DATA INSPECTION ###")
-inspect_data(processed_df, detailed=True)  # Change to False for summary only
+inspect_data(processed_df, detailed=False)  # Change to False for summary only
 
 # Display first 10 rows of processed data with all columns
 print("\n### FIRST 10 ROWS OF PROCESSED DATA ###")
@@ -281,5 +384,8 @@ pd.set_option('display.width', None)
 print(processed_df.head(10))
 print("=" * 60)
 
-# Visualize the survival data
-visualize_survival_data(processed_df)
+# Visualize the survival data (set to False to disable)
+visualize_survival_data(processed_df, enable_visualization=False)
+
+# Perform decision tree analysis on Age
+age_threshold, gini_score = decision_tree_age_split(processed_df)
