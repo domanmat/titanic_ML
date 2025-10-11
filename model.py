@@ -4,6 +4,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 from itertools import combinations
 
+
 def inspect_data(df, detailed=True):
     """
     Inspect the dataset for missing data.
@@ -12,20 +13,20 @@ def inspect_data(df, detailed=True):
     - df: pandas DataFrame to inspect
     - detailed: bool, if True shows full analysis, if False shows only summary
     """
-    print("\n" + "=" * 60 + "\n")
+    print("=" * 60 )
 
     if detailed:
         # Display basic information about the dataset
         print("Dataset Shape:", df.shape)
         print(f"Total Rows: {df.shape[0]}, Total Columns: {df.shape[1]}")
-        print("\n" + "=" * 60 + "\n")
+        print("=" * 60)
 
         # Display first 10 rows with all columns
         print("First 10 rows of the dataset:")
         pd.set_option('display.max_columns', None)
         pd.set_option('display.width', None)
         print(df.head(10))
-        print("\n" + "=" * 60 + "\n")
+        print("=" * 60)
 
         # Missing data analysis as a single row with column headers
         print("Missing Data Analysis:")
@@ -41,7 +42,7 @@ def inspect_data(df, detailed=True):
         }).T
 
         print(missing_analysis)
-        print("\n" + "=" * 60 + "\n")
+        print("=" * 60)
 
         # Summary statistics
         total_cells = df.shape[0] * df.shape[1]
@@ -49,7 +50,7 @@ def inspect_data(df, detailed=True):
         print(f"Total cells in dataset: {total_cells}")
         print(f"Total missing cells: {total_missing}")
         print(f"Overall missing percentage: {(total_missing / total_cells * 100):.2f}%")
-        print("\n" + "=" * 60 + "\n")
+        print("=" * 60)
 
     # Display columns with missing data (shown in both modes)
     print("Columns with missing data:")
@@ -72,9 +73,11 @@ def inspect_data(df, detailed=True):
     else:
         print("No missing data found in any column!")
 
-    print("\n" + "=" * 60 + "\n")
+    print("=" * 60)
+    print()
 
-def process_data(df):
+
+def process_data(df,detailed):
     """
     Process the Titanic dataset by handling missing values and optimizing data types.
 
@@ -150,18 +153,28 @@ def process_data(df):
     # Ticket - string shorter than 100 symbols
     processed_df['Ticket'] = processed_df['Ticket'].astype(str).str[:100]
 
-    print("   Data types optimized.")
+    if detailed:
+        # Display first 10 rows of processed data with all columns
+        print("\n### FIRST 10 ROWS OF PROCESSED DATA ###")
+        print("=" * 60)
+        pd.set_option('display.max_columns', None)
+        pd.set_option('display.width', None)
+        print(processed_df.head(10))
+        print("=" * 60)
 
-    # Display data type summary
-    print("\n3. Data type summary:")
-    print("-" * 60)
-    print(processed_df.dtypes)
+        print("   Data types optimized.")
 
-    print("\n" + "=" * 60)
-    print("Processing complete!")
-    print("=" * 60 + "\n")
+        # Display data type summary
+        print("\n3. Data type summary:")
+        print("-" * 60)
+        print(processed_df.dtypes)
+
+        print("=" * 60)
+        print("Processing complete!")
+        print("=" * 60)
 
     return processed_df
+
 
 def visualize_survival_data(df, enable_visualization=True):
     """
@@ -186,7 +199,7 @@ def visualize_survival_data(df, enable_visualization=True):
     param_pairs = list(combinations(parameters, 2))
 
     print(f"Creating {len(param_pairs)} scatter plots...")
-    print("=" * 60 + "\n")
+    print("=" * 60)
 
     # Calculate grid dimensions
     n_plots = len(param_pairs)
@@ -255,9 +268,10 @@ def visualize_survival_data(df, enable_visualization=True):
     print(f"Plot saved as '{output_path}'")
     plt.close(fig)  # Close the figure instead of showing it
 
-    print("\n" + "=" * 60)
+    print("=" * 60)
     print(f"Generated {n_plots} scatter plots showing survival patterns")
-    print("=" * 60 + "\n")
+    print("=" * 60)
+
 
 def decision_tree_age_split(df):
     """
@@ -350,11 +364,12 @@ def decision_tree_age_split(df):
         print(f"  Died: {len(right) - right['Survived'].sum()} ({(1 - right['Survived'].mean()) * 100:.1f}%)")
         print(f"  Gini Impurity: {best_split_info['right_gini']:.4f}")
 
-    print("\n" + "=" * 60)
+    print("=" * 60)
     print("Decision tree optimization complete!")
-    print("=" * 60 + "\n")
+    print("=" * 60)
 
     return best_age_threshold, best_gini
+
 
 def predict_survival(PassengerId, age_threshold, df=None):
     """
@@ -362,7 +377,7 @@ def predict_survival(PassengerId, age_threshold, df=None):
 
     Parameters:
     - PassengerId: ID of the passenger to predict
-    - age_threshold: optimal age threshold from decision tree
+    - age_condition: optimal age threshold from decision tree
     - df: DataFrame containing passenger data (default: processed_df if available)
 
     Returns:
@@ -431,7 +446,7 @@ def predict_survival(PassengerId, age_threshold, df=None):
         correct = "✓ CORRECT" if prediction == actual else "✗ INCORRECT"
         print(f"Actual: {actual} ({actual_text}) - {correct}")
 
-    print("=" * 60 + "\n")
+    print("=" * 60)
 
     return prediction, survival_probability
 
@@ -446,25 +461,18 @@ print("\n### ORIGINAL DATA INSPECTION ###")
 inspect_data(df, detailed=False)  # Change to False for summary only
 
 # Process the data
-processed_df = process_data(df)
+processed_df = process_data(df, detailed=False)
 
 # Inspect processed data
 print("\n### PROCESSED DATA INSPECTION ###")
 inspect_data(processed_df, detailed=False)  # Change to False for summary only
 
-# Display first 10 rows of processed data with all columns
-print("\n### FIRST 10 ROWS OF PROCESSED DATA ###")
-print("=" * 60)
-pd.set_option('display.max_columns', None)
-pd.set_option('display.width', None)
-print(processed_df.head(10))
-print("=" * 60)
-
 # Visualize the survival data (set to False to disable)
 visualize_survival_data(processed_df, enable_visualization=False)
 
 # Perform decision tree analysis on Age
-age_threshold, gini_score = decision_tree_age_split(processed_df)
+age_condition, gini_score = decision_tree_age_split(processed_df)
 
 # Test prediction with PassengerId
-predict_survival(PassengerId=1, age_threshold=age_threshold, df=processed_df)
+predict_survival(PassengerId=100, age_threshold=age_condition, df=processed_df)
+
