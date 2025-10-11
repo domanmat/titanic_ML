@@ -20,15 +20,15 @@ def process_data(df):
 
     # Handle missing values
     print("\n1. Filling missing values...")
-    processed_df['Age'].fillna(-1, inplace=True)
-    processed_df['Cabin'].fillna('None', inplace=True)
-    processed_df['Embarked'].fillna('None', inplace=True)
+    processed_df['Age'] = processed_df['Age'].fillna(-1)
+    processed_df['Cabin'] = processed_df['Cabin'].fillna('None')
+    processed_df['Embarked'] = processed_df['Embarked'].fillna('None')
 
     # Fill remaining columns with 'None'
     for col in processed_df.columns:
         if col not in ['Age', 'Cabin', 'Embarked']:
             if processed_df[col].isnull().any():
-                processed_df[col].fillna('None', inplace=True)
+                processed_df[col] = processed_df[col].fillna('None')
 
     print("   Missing values filled.")
 
@@ -167,10 +167,22 @@ def inspect_data(df, detailed=True):
 file_path = r"C:\Users\Mateusz\Downloads\titanic\train.csv"
 df = pd.read_csv(file_path)
 
-# Choose inspection mode:
-# detailed=True for full analysis
-# detailed=False for summary only
-
+# Inspect original data
+print("\n### ORIGINAL DATA INSPECTION ###")
 inspect_data(df, detailed=False)  # Change to False for summary only
-df_proc=process_data(df)
-print(df_proc.head(10))
+
+# Process the data
+processed_df = process_data(df)
+
+# Inspect processed data
+print("\n### PROCESSED DATA INSPECTION ###")
+inspect_data(processed_df, detailed=False)  # Change to False for summary only
+
+# Display first 10 rows of processed data with all columns
+print("\n### FIRST 10 ROWS OF PROCESSED DATA ###")
+print("=" * 60)
+pd.set_option('display.max_columns', None)
+pd.set_option('display.width', None)
+print(processed_df.head(10))
+print("=" * 60)
+
