@@ -30,7 +30,7 @@ def visualize_survival_data(df):
     n_cols = 4  # 4 plots per row for better visibility
     n_rows = (n_plots + n_cols - 1) // n_cols
 
-    # Create figure with subplots
+    # Create figure with subplots (4x larger in each dimension)
     fig, axes = plt.subplots(n_rows, n_cols, figsize=(20, 5 * n_rows))
     axes = axes.flatten() if n_plots > 1 else [axes]
 
@@ -85,9 +85,12 @@ def visualize_survival_data(df):
         axes[idx].axis('off')
 
     plt.tight_layout()
-    plt.savefig('titanic_survival_analysis.png', dpi=150, bbox_inches='tight')
-    print("Plots saved as 'titanic_survival_analysis.png'")
-    plt.show()
+
+    # Save as PDF in the specified directory
+    output_path = r"C:\Users\Mateusz\Downloads\titanic\Figure_1.pdf"
+    plt.savefig(output_path, format='pdf', bbox_inches='tight')
+    print(f"Plot saved as '{output_path}'")
+    plt.close(fig)  # Close the figure instead of showing it
 
     print("\n" + "=" * 60)
     print(f"Generated {n_plots} scatter plots showing survival patterns")
