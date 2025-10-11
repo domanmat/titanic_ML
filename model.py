@@ -470,4 +470,5 @@ visualize_survival_data(processed_df, enable_visualization=False)
 # Perform decision tree analysis on Age
 age_threshold, gini_score = decision_tree_age_split(processed_df)
 
-prediction, probability = predict_survival(24, age_threshold, processed_df)
+# Test prediction with PassengerId
+predict_survival(PassengerId=1, age_threshold=age_threshold, df=processed_df)
