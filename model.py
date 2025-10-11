@@ -102,6 +102,69 @@ def visualize_survival_data(df, enable_visualization=True):
     print("=" * 60 + "\n")
 
 
+def predict_survival(passenger_data, age_threshold, df):
+    """
+    Predict survival probability for a given passenger based on optimized age threshold.
+
+    Parameters:
+    - passenger_data: dict or Series with passenger information (must contain 'Age')
+    - age_threshold: optimal age threshold from decision tree
+    - df: original processed DataFrame to calculate probabilities
+
+    Returns:
+    - prediction: 0 (died) or 1 (survived)
+    - probability: probability of survival
+    """
+    print("\n### SURVIVAL PREDICTION ###")
+    print("=" * 60)
+
+    # Extract age from passenger data
+    if isinstance(passenger_data, dict):
+        passenger_age = passenger_data.get('Age', -1)
+    else:
+        passenger_age = passenger_data['Age']
+
+    # Filter out missing age values (-1) from training data
+    df_valid = df[df['Age'] >= 0].copy()
+
+    # Check if passenger has valid age
+    if passenger_age < 0:
+        print("Warning: Passenger has missing age data (-1)")
+        print("Using overall survival rate for prediction...")
+        survival_probability = df_valid['Survived'].mean()
+    else:
+        # Determine which group the passenger belongs to
+        if passenger_age <= age_threshold:
+            group = df_valid[df_valid['Age'] <= age_threshold]
+            group_name = f"Age <= {age_threshold}"
+        else:
+            group = df_valid[df_valid['Age'] > age_threshold]
+            group_name = f"Age > {age_threshold}"
+
+        # Calculate survival probability for this group
+        survival_probability = group['Survived'].mean()
+
+        print(f"Passenger Age: {passenger_age} years")
+        print(f"Group: {group_name}")
+        print(f"Group Size: {len(group)} passengers")
+
+    # Display probability
+    print(f"Survival Probability: {survival_probability * 100:.2f}%")
+
+    # Make prediction based on 50% threshold
+    if survival_probability >= 0.5:
+        prediction = 1
+        prediction_text = "SURVIVED"
+    else:
+        prediction = 0
+        prediction_text = "DIED"
+
+    print(f"Prediction: {prediction} ({prediction_text})")
+    print("=" * 60 + "\n")
+
+    return prediction, survival_probability
+
+
 def decision_tree_age_split(df):
     """
     Create a single-node decision tree that splits passengers by age
@@ -367,14 +430,14 @@ df = pd.read_csv(file_path)
 
 # Inspect original data
 print("\n### ORIGINAL DATA INSPECTION ###")
-inspect_data(df, detailed=False)  # Change to False for summary only
+inspect_data(df, detailed=True)  # Change to False for summary only
 
 # Process the data
 processed_df = process_data(df)
 
 # Inspect processed data
 print("\n### PROCESSED DATA INSPECTION ###")
-inspect_data(processed_df, detailed=False)  # Change to False for summary only
+inspect_data(processed_df, detailed=True)  # Change to False for summary only
 
 # Display first 10 rows of processed data with all columns
 print("\n### FIRST 10 ROWS OF PROCESSED DATA ###")
@@ -389,3 +452,6 @@ visualize_survival_data(processed_df, enable_visualization=False)
 
 # Perform decision tree analysis on Age
 age_threshold, gini_score = decision_tree_age_split(processed_df)
+
+predict_survival(processed_df[10],6,processed_df)
+
