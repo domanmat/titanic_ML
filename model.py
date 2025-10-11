@@ -102,14 +102,14 @@ def visualize_survival_data(df, enable_visualization=True):
     print("=" * 60 + "\n")
 
 
-def predict_survival(passenger_data, age_threshold, df):
+def predict_survival(PassengerId, age_threshold, df=None):
     """
     Predict survival probability for a given passenger based on optimized age threshold.
 
     Parameters:
-    - passenger_data: dict or Series with passenger information (must contain 'Age')
+    - PassengerId: ID of the passenger to predict
     - age_threshold: optimal age threshold from decision tree
-    - df: original processed DataFrame to calculate probabilities
+    - df: DataFrame containing passenger data (default: processed_df if available)
 
     Returns:
     - prediction: 0 (died) or 1 (survived)
@@ -118,11 +118,21 @@ def predict_survival(passenger_data, age_threshold, df):
     print("\n### SURVIVAL PREDICTION ###")
     print("=" * 60)
 
-    # Extract age from passenger data
-    if isinstance(passenger_data, dict):
-        passenger_age = passenger_data.get('Age', -1)
-    else:
-        passenger_age = passenger_data['Age']
+    # Check if passenger exists in dataframe
+    passenger_row = df[df['PassengerId'] == PassengerId]
+
+    if passenger_row.empty:
+        print(f"Error: PassengerId {PassengerId} not found in dataset")
+        return None, None
+
+    # Get passenger data
+    passenger_data = passenger_row.iloc[0]
+    passenger_age = passenger_data['Age']
+
+    print(f"Passenger ID: {PassengerId}")
+    print(f"Name: {passenger_data['Name']}")
+    print(f"Sex: {passenger_data['Sex']}, Age: {passenger_age}, Class: {passenger_data['Pclass']}")
+    print("-" * 60)
 
     # Filter out missing age values (-1) from training data
     df_valid = df[df['Age'] >= 0].copy()
@@ -144,7 +154,6 @@ def predict_survival(passenger_data, age_threshold, df):
         # Calculate survival probability for this group
         survival_probability = group['Survived'].mean()
 
-        print(f"Passenger Age: {passenger_age} years")
         print(f"Group: {group_name}")
         print(f"Group Size: {len(group)} passengers")
 
@@ -160,6 +169,14 @@ def predict_survival(passenger_data, age_threshold, df):
         prediction_text = "DIED"
 
     print(f"Prediction: {prediction} ({prediction_text})")
+
+    # Show actual survival status if available
+    if 'Survived' in passenger_data:
+        actual = passenger_data['Survived']
+        actual_text = "SURVIVED" if actual == 1 else "DIED"
+        correct = "✓ CORRECT" if prediction == actual else "✗ INCORRECT"
+        print(f"Actual: {actual} ({actual_text}) - {correct}")
+
     print("=" * 60 + "\n")
 
     return prediction, survival_probability
@@ -453,5 +470,4 @@ visualize_survival_data(processed_df, enable_visualization=False)
 # Perform decision tree analysis on Age
 age_threshold, gini_score = decision_tree_age_split(processed_df)
 
-predict_survival(processed_df[10],6,processed_df)
-
+prediction, probability = predict_survival(24, age_threshold, processed_df)
