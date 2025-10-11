@@ -30,7 +30,7 @@ def visualize_survival_data(df):
     n_cols = 4  # 4 plots per row for better visibility
     n_rows = (n_plots + n_cols - 1) // n_cols
 
-    # Create figure with subplots (4x larger in each dimension)
+    # Create figure with subplots (normal size)
     fig, axes = plt.subplots(n_rows, n_cols, figsize=(20, 5 * n_rows))
     axes = axes.flatten() if n_plots > 1 else [axes]
 
