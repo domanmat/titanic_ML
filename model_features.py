@@ -4,6 +4,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 from itertools import combinations
 GREEN = "\033[32m"
+RED = "\033[31m"
 RESET = "\033[0m"
 
 import time
@@ -12,6 +13,8 @@ start_time = time.time()
 print("Executing the code...")
 
 total_score=0
+
+
 def counter(survived, len_df, survival_r):
     """
     Add a value to the global counter variable.
@@ -22,6 +25,7 @@ def counter(survived, len_df, survival_r):
     else:
         total_score += len_df-survived
     return total_score
+
 
 def inspect_data(df, detailed=True):
     """
@@ -290,12 +294,36 @@ def visualize_survival_data(df, enable_visualization=True):
     print("=" * 60)
 
 
-def gini_impurity(group):
+def gini_Y_impurity(group):
     # Calculate Gini impurity for each group
     if len(group) == 0:
         return 0
     survived_ratio = group['Survived'].sum() / len(group)
     return 2 * survived_ratio * (1 - survived_ratio)
+
+
+def gini_X_impurity(group,features):
+    # Calculate Gini impurity for each group
+    if len(group) == 0:
+        return 0
+    # p_unique = group[features].value_counts()
+    # print(p_unique)
+    gini_x=[]
+    # df_x = pd.DataFrame({"gini"})
+    for i in features:
+        p_sq_sum=0
+        unique_values = sorted(group[i].unique())
+        # print(i)
+        for unique in unique_values:
+            counts=group[i].value_counts()[unique]
+            # print(unique, counts)
+            p_unique = counts / len(group)
+            p_sq_sum+=p_unique**2
+        gini_x.append(1 - p_sq_sum)
+        # df_x.append(1 - p_sq_sum)
+    df_x = pd.DataFrame({"gini": gini_x})
+    # print(gini_X)
+    return df_x
 
 
 def decision_tree_node(df, features):
@@ -310,9 +338,9 @@ def decision_tree_node(df, features):
     - best_split_param: optimal value for splitting
     - best_w_gini: weighted Gini impurity at the optimal split
     """
-    df_valid = df[features].copy()
+    df_valid = df[features_all].copy()
 
-    features = ['Pclass', 'Sex', 'Age', 'SibSp', 'Parch', 'Fare']
+    # features = ['Pclass', 'Sex', 'Age', 'SibSp', 'Parch', 'Fare']
     best_gini_global = float('inf')
     best_split_param_global = None
     # best_feature = None
@@ -326,6 +354,7 @@ def decision_tree_node(df, features):
 
         # Get unique age values to test as thresholds
         unique_values = sorted(df_valid[i].unique())
+        # print(unique_values)
 
         best_w_gini = float('inf')
         best_split_param = None
@@ -333,6 +362,7 @@ def decision_tree_node(df, features):
 
         # Iterate through all possible age thresholds
         for limit in unique_values:
+            # if len(unique_values)==1:
 
             # Split df_processed into two groups
             left_group = df_valid[df_valid[i] <= limit]
@@ -342,8 +372,8 @@ def decision_tree_node(df, features):
             if len(left_group) == 0 or len(right_group) == 0:
                 continue
 
-            left_gini = gini_impurity(left_group)
-            right_gini = gini_impurity(right_group)
+            left_gini = gini_Y_impurity(left_group)
+            right_gini = gini_Y_impurity(right_group)
 
             # Calculate weighted Gini impurity
             n_left = len(left_group)
@@ -359,14 +389,14 @@ def decision_tree_node(df, features):
                 best_split_param = limit
                 left_group_local = left_group
                 right_group_local = right_group
-                best_split_info = {
-                    'left_group': left_group,
-                    'right_group': right_group,
-                    'left_gini': left_gini,
-                    'right_gini': right_gini,
-                    'n_left': n_left,
-                    'n_right': n_right
-                }
+                # best_split_info = {
+                #     'left_group': left_group,
+                #     'right_group': right_group,
+                #     'left_gini': left_gini,
+                #     'right_gini': right_gini,
+                #     'n_left': n_left,
+                #     'n_right': n_right
+                # }
             # print(f"{best_split_param:2n}, {best_w_gini:.4f}, {limit:2n}, {weighted_gini:.4f}, {left_gini:.4f}, {right_gini:.4f}")
         if best_w_gini < best_gini_global:
             best_gini_global = best_w_gini
@@ -384,106 +414,27 @@ def decision_tree_node(df, features):
             }
 
         # Display results
-        print(f"Optimal Splitting Value of {i}: {best_split_param}")
+        print(f"Optimal Splitting Value of {i}: {best_split_param_global}")
         print(f"Weighted Gini Impurity: {best_w_gini:.4f}")
-        if best_split_info:
-            print("-" * 60)
-            left = best_split_info['left_group']
-            right = best_split_info['right_group']
-
-            print(f"Left Group ({i} <= {best_split_param}):")
-            print(f"  Size: {best_split_info['n_left']} passengers")
-            print(f"  Correct prediction: {left['Survived'].sum()} out of {len(left)}, so {(left['Survived'].mean()) * 100:.1f}% Survived")
-            print(f"  Gini Impurity: {best_split_info['left_gini']:.4f}")
-
-            print(f"Right Group ({i} > {best_split_param}):")
-            print(f"  Size: {best_split_info['n_right']} passengers")
-            print(f"  Correct prediction: {len(right) - right['Survived'].sum()} out of {len(right)}, so {(1 - right['Survived'].mean()) * 100:.1f}% Survived")
-            print(f"  Gini Impurity: {best_split_info['right_gini']:.4f}")
+        # if best_split_info_global:
+        #     print("-" * 60)
+        #     left = best_split_info_global['left_group']
+        #     right = best_split_info_global['right_group']
+        #
+        #     print(f"Left Group ({i} <= {best_split_param_global}):")
+        #     print(f"  Size: {best_split_info_global['n_left']} passengers")
+        #     print(f"  Correct prediction: {left['Survived'].sum()} out of {len(left)}, so {(left['Survived'].mean()) * 100:.1f}% Survived")
+        #     print(f"  Gini Impurity: {best_split_info_global['left_gini']:.4f}")
+        #
+        #     print(f"Right Group ({i} > {best_split_param_global}):")
+        #     print(f"  Size: {best_split_info_global['n_right']} passengers")
+        #     print(f"  Correct prediction: {len(right) - right['Survived'].sum()} out of {len(right)}, so {(1 - right['Survived'].mean()) * 100:.1f}% Survived")
+        #     print(f"  Gini Impurity: {best_split_info_global['right_gini']:.4f}")
 
 
     # print(best_feature, best_split_param_global, f"{best_gini_global:.4f}")
+    print(best_feature)
     return best_feature, best_split_param_global, best_gini_global, left_group_best, right_group_best
-
-
-def predict_survival(PassengerId, age_threshold, df=None):
-    """
-    Predict survival probability for a given passenger based on optimized age threshold.
-
-    Parameters:
-    - PassengerId: ID of the passenger to predict
-    - age_condition: optimal age threshold from decision tree
-    - df: DataFrame containing passenger df_processed (default: processed_df if available)
-
-    Returns:
-    - prediction: 0 (died) or 1 (survived)
-    - probability: probability of survival
-    """
-    print("\n### SURVIVAL PREDICTION ###")
-    print("=" * 60)
-
-    # Check if passenger exists in dataframe
-    passenger_row = df[df['PassengerId'] == PassengerId]
-
-    if passenger_row.empty:
-        print(f"Error: PassengerId {PassengerId} not found in dataset")
-        return None, None
-
-    # Get passenger df_processed
-    passenger_data = passenger_row.iloc[0]
-    passenger_age = passenger_data['Age']
-
-    print(f"Passenger ID: {PassengerId}")
-    print(f"Name: {passenger_data['Name']}")
-    print(f"Sex: {passenger_data['Sex']}, Age: {passenger_age}, Class: {passenger_data['Pclass']}")
-    print("-" * 60)
-
-    # Filter out missing age values (-1) from training df_processed
-    df_valid = df[df['Age'] >= 0].copy()
-
-    # Check if passenger has valid age
-    if passenger_age < 0:
-        print("Warning: Passenger has missing age df_processed (-1)")
-        print("Using overall survival rate for prediction...")
-        survival_probability = df_valid['Survived'].mean()
-    else:
-        # Determine which group the passenger belongs to
-        if passenger_age <= age_threshold:
-            group = df_valid[df_valid['Age'] <= age_threshold]
-            group_name = f"Age <= {age_threshold}"
-        else:
-            group = df_valid[df_valid['Age'] > age_threshold]
-            group_name = f"Age > {age_threshold}"
-
-        # Calculate survival probability for this group
-        survival_probability = group['Survived'].mean()
-
-        print(f"Group: {group_name}")
-        print(f"Group Size: {len(group)} passengers")
-
-    # Display probability
-    print(f"Survival Probability: {survival_probability * 100:.2f}%")
-
-    # Make prediction based on 50% threshold
-    if survival_probability >= 0.5:
-        prediction = 1
-        prediction_text = "SURVIVED"
-    else:
-        prediction = 0
-        prediction_text = "DIED"
-
-    print(f"Prediction: {prediction} ({prediction_text})")
-
-    # Show actual survival status if available
-    if 'Survived' in passenger_data:
-        actual = passenger_data['Survived']
-        actual_text = "SURVIVED" if actual == 1 else "DIED"
-        correct = "✓ CORRECT" if prediction == actual else "✗ INCORRECT"
-        print(f"Actual: {actual} ({actual_text}) - {correct}")
-
-    print("=" * 60)
-
-    return prediction, survival_probability
 
 
 def build_decision_tree(df, features, max_depth, gini_threshold, min_group, current_depth=0):
@@ -502,7 +453,7 @@ def build_decision_tree(df, features, max_depth, gini_threshold, min_group, curr
     """
 
     # Statistical functions
-    gini_branch=gini_impurity(df)
+    gini_branch=gini_Y_impurity(df)
     global total_score
     survival_r = df['Survived'].mean()
     if survival_r >= 0.50:
@@ -512,6 +463,11 @@ def build_decision_tree(df, features, max_depth, gini_threshold, min_group, curr
 
     # Base cases: stop splitting
     print(f"Depth {current_depth}: Splitting {len(df)} samples...")
+
+    # Calculating gini impurity of the parameters set
+    df_x=gini_X_impurity(df,features)
+    x_gini=df_x.sum().iloc[0]
+
     if current_depth >= max_depth:
         print(f"Depth {current_depth}: Reached maximum depth with gini={gini_branch:.4f}")
         print("=" * 60)
@@ -548,16 +504,12 @@ def build_decision_tree(df, features, max_depth, gini_threshold, min_group, curr
             'accuracy': accuracy
         }
 
-    # Perform split
-    best_feature, best_split_param, best_w_gini, left_group, right_group = decision_tree_node(df, features)
-    print(f"Depth {current_depth}: Splitted into {len(left_group)} and {len(right_group)} samples, "
-          f"using {best_feature} = {best_split_param}, yielding w_gini = {best_w_gini:.4f}")
 
     # Check if Gini threshold for splitting is met and if it is, creates Leaf boolean
     # if best_w_gini <= gini_threshold:
     if gini_branch <= gini_threshold:
-        # Creates Leaf with split information
-        print(f"Depth {current_depth}: Gini of splitting {best_w_gini:.4f} <= threshold {gini_threshold}")
+        # Creates Leaf with gini information
+        print(f"Depth {current_depth}: Gini before splitting {gini_branch:.4f} <= threshold {gini_threshold}")
         print("=" * 90)
         counter(df['Survived'].sum(), len(df), survival_r)
         return {
@@ -568,6 +520,26 @@ def build_decision_tree(df, features, max_depth, gini_threshold, min_group, curr
             'survival_rate': survival_r,
             'accuracy': accuracy
         }
+    elif x_gini<= gini_threshold:
+        print(df)
+        # Creates Leaf where there is a set of the same X parameters, but different Survive values
+        print(f"Depth {current_depth}: Gini of branch {gini_branch:.4f} > {gini_threshold} "
+              f"but set can't be split as g_impurity of parameters = {x_gini:.3f}")
+        print("=" * 90)
+        counter(df['Survived'].sum(), len(df), survival_r)
+        return {
+            'leaf': True,
+            'depth': current_depth,
+            'size': len(df),
+            'gini': gini_branch,
+            'survival_rate': survival_r,
+            'accuracy': accuracy
+        }
+    else:
+        # Perform split
+        best_feature, best_split_param, best_w_gini, left_group, right_group = decision_tree_node(df, features)
+        print(f"Depth {current_depth}: Splitted into {len(left_group)} and {len(right_group)} samples, "
+              f"using {best_feature} = {best_split_param}, yielding w_gini = {best_w_gini:.4f}")
     print("=" * 90)
 
     # Create node with split information
@@ -619,12 +591,34 @@ def print_tree(node, prefix="", is_left=True):
         print_tree(node['right'], new_prefix, False)
 
 
+def df_random_slice(df, percent, random_seed):
+    """ Select a percentage of random rows.
+        Parameters:
+    - df: pandas loaded DataFrame
+    - percent: fraction of rows to select (0.0 to 1.0)
+    - random_seed: optional seed
+    """
+    if random_seed is not None:
+        np.random.seed(random_seed)
+
+    n_samples = int(len(df) * percent)
+    indices = np.random.choice(len(df), size=n_samples, replace=False)
+    sliced_df = df.iloc[indices].copy()
+
+    return sliced_df, indices
+
+
+
 
 # Load the CSV file
 file_path = r"C:\Users\Mateusz\Downloads\titanic\train.csv"
 df = pd.read_csv(file_path)
 
-features = ['Survived', 'Pclass', 'Sex', 'Age', 'SibSp', 'Parch', 'Fare']
+# Usage
+df, train_indices = df_random_slice(df, percent=0.2, random_seed=42)
+
+features_all = ['Survived', 'Pclass', 'Sex', 'Age', 'SibSp', 'Parch', 'Fare']
+features = ['Pclass', 'Sex', 'Age', 'SibSp', 'Parch', 'Fare']
 
 # Inspect original df_processed
 print(("=" * 60)+"\n### ORIGINAL DATA INSPECTION ###")
