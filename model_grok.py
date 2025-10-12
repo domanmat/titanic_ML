@@ -1,3 +1,6 @@
+
+import time
+loading_time = time.time()
 print("Loading modules...")
 import pandas as pd
 import numpy as np
@@ -10,7 +13,6 @@ import io
 import os
 import sys
 
-import time
 # Start timing
 start_time = time.time()
 print("Executing the code...")
@@ -58,30 +60,40 @@ def preprocess(data,features):
 X = preprocess(data_frame,features)
 
 # Split data_frame into training and validation sets
-X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.5, random_state=1)
 # X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.5)
-print(X_train)
 
-# Optimize max_depth
 best_depth = 1
 best_accuracy = 0
-for depth in range(1, 15):
-    train_model = DecisionTreeClassifier(max_depth=depth, criterion='gini', random_state=1)
-    # train_model = DecisionTreeClassifier(max_depth=depth, criterion='gini')
-    train_model.fit(X_train, y_train)
-    y_pred = train_model.predict(X_val)
-    print(depth)
-    print(len(y_pred))
-    print(y_pred)
-    accuracy = accuracy_score(y_val, y_pred)
-    if accuracy > best_accuracy:
-        best_accuracy = accuracy
-        best_depth = depth
+#iterate to get better statistics
+for i in range(1):
+    # Optimize max_depth
+    # X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.3, random_state=1)
+    # X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.3, random_state=i)
+    X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.2)
+    # print(X_train)
+    for depth in range(1, 15):
+        # train_model = DecisionTreeClassifier(max_depth=depth, criterion='gini', random_state=i)
+        train_model = DecisionTreeClassifier(splitter='best',max_depth=depth, criterion='gini')
+        train_model.fit(X_train, y_train)
+        y_pred = train_model.predict(X_val)
+        # print(best_depth)
+        # print(len(y_pred))
+        # print(y_pred)
+        accuracy = accuracy_score(y_val, y_pred)
+        if accuracy > best_accuracy:
+            best_accuracy = accuracy
+            best_depth = depth
+            trained_model=train_model
+    print(f"Current best max_depth: {best_depth} with validation accuracy: {best_accuracy:.4f}")
 
+# Results from the optimization
+print(f"Best max_depth: {best_depth} with validation accuracy: {best_accuracy:.4f}")
 # Train final model with best max_depth
 # final_model = DecisionTreeClassifier(max_depth=best_depth, criterion='gini', random_state=1)
+best_depth=10
 final_model = DecisionTreeClassifier(max_depth=best_depth, criterion='gini')
 final_model.fit(X, y)
+# final_model=trained_model
 
 
 # Function to export tree as text with probabilities
@@ -114,7 +126,6 @@ def export_tree(model, feature_names):
 
 
 # Print the decision tree
-print(f"Best max_depth: {best_depth} with validation accuracy: {best_accuracy:.4f}")
 # print("Decision Tree Structure:")
 # print(export_tree(final_model, features))
 model_tree = (export_tree(final_model, features))
@@ -186,8 +197,11 @@ def final_test(model):
 # # Calculating for an example
 # example_prediction(final_model, 1)
 final_test(final_model)
+final_test(trained_model)
 
 # End timing
 end_time = time.time()
 execution_time = end_time - start_time
-print(f"\nTotal execution time: {execution_time:.4f} seconds")
+t_execution_time = end_time - loading_time
+print(f"\nCode execution time: {execution_time:.4f} seconds")
+print(f"\nTotal execution time: {t_execution_time:.4f} seconds")
