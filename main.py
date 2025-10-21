@@ -19,7 +19,8 @@ import time
 start_time = time.time()
 print("Executing the code...")
 
-total_score=0
+total_score = 0
+time_predictions = 0
 
 
 
@@ -364,7 +365,7 @@ def predict_single(tree, sample):
 
 def predict_batch(tree, df, features):
     """
-    Predict survival for multiple samples.
+    Predict survival for all data using whole tree.
 
     Parameters:
     - tree: decision tree dictionary structure
@@ -374,22 +375,62 @@ def predict_batch(tree, df, features):
     Returns:
     - predictions: list of predictions
     """
-    predictions = []
-    real_status = []
-    col_accuracy = []
-    col_pass_id = []
+    time_predict_1 = time.time()
+    n_samples = len(df)
+    predictions = [0] * n_samples
+    real_status = [0] * n_samples
+    col_accuracy = [0] * n_samples
+    col_pass_id = [0] * n_samples
+
+    # Use itertuples instead of iterrows (much faster)
+    for i, row in enumerate(df.itertuples(index=False)):
+        sample = {feature: getattr(row, feature) for feature in features}
+        col_pass_id[i], predictions[i], real_status[i], col_accuracy[i] = predict_single(tree, sample)
+
+    time_predict_2 = time.time()
+    global time_predictions
+    time_predictions += (time_predict_2-time_predict_1)
+    return pd.DataFrame({
+        "PassengerId": col_pass_id,
+        "predictions": predictions,
+        "real status": real_status,
+        "accuracy": col_accuracy
+    })
 
 
-    for idx, row in df.iterrows():
-        sample = {feature: row[feature] for feature in features}
-        pass_id, pred, status, accuracy = predict_single(tree, sample)
-        predictions.append(pred)
-        real_status.append(status)
-        col_accuracy.append(accuracy)
-        col_pass_id.append(pass_id)
-    df_predictions=pd.DataFrame({"PassengerId":col_pass_id,"predictions":predictions, "real status":real_status, "accuracy":col_accuracy})
-
-    return df_predictions
+def train_trees(processed_df, percent, sessions):
+    accuracy_ratio_best = 0
+    tree_best = None
+    best_index = 0
+    df=[]
+    train_indices=[]
+    for session in range(sessions):
+        # df, train_indices = df_random_slice(processed_df, percent=percent, random_seed=None)
+        df_tmp, train_indices_tmp = df_random_slice(processed_df, percent=percent, random_seed=None)
+        df.append(df_tmp)
+        train_indices.append(train_indices_tmp)
+    for session in range(sessions):
+        total_accuracy=0
+        final_accuracy=0
+        # df[session], train_indices[session] = df_random_slice(processed_df, percent=percent, random_seed=None)
+        print(f'Tree number {sessions+1}')
+        tree = build_decision_tree(df[session], features, max_depth, gini_threshold=gini_threshold, min_group=min_group)
+        for testing in range(sessions):
+            tree_predictions = predict_batch(tree, df[testing], features_all)
+            accuracy_ratio = tree_predictions['accuracy'].sum()/len(tree_predictions)
+            total_accuracy += accuracy_ratio
+            print(f'Accuracy of the tree No: {session+1} on set {testing+1} is {accuracy_ratio:.2%}')
+            # print("=" * 90)
+        final_accuracy=total_accuracy/rand_sessions
+        print(f'Average accuracy of the tree No: {session + 1} on {sessions} training sets is {final_accuracy:.2%}')
+        print("=" * 90)
+        if final_accuracy > accuracy_ratio_best:
+            print('Found a more accurate tree')
+            accuracy_ratio_best = accuracy_ratio
+            tree_best = tree
+            best_index = session+1
+            df_trained = df[session]
+    return tree_best, df_trained, final_accuracy, best_index
 
 
 
@@ -446,40 +487,7 @@ print(f"Final score of the obtained tree on training data: {total_score} out of 
 
 
 time2 = time.time()
-# train trees, using random forest
-def train_trees(processed_df, percent, sessions):
-    accuracy_ratio_best = 0
-    tree_best = None
-    best_index = 0
-    df=[]
-    train_indices=[]
-    for session in range(sessions):
-        # df, train_indices = df_random_slice(processed_df, percent=percent, random_seed=None)
-        df_tmp, train_indices_tmp = df_random_slice(processed_df, percent=percent, random_seed=None)
-        df.append(df_tmp)
-        train_indices.append(train_indices_tmp)
-    for session in range(sessions):
-        total_accuracy=0
-        final_accuracy=0
-        # df[session], train_indices[session] = df_random_slice(processed_df, percent=percent, random_seed=None)
-        print(f'Tree number ')
-        tree = build_decision_tree(df[session], features, max_depth, gini_threshold=gini_threshold, min_group=min_group)
-        for testing in range(sessions):
-            tree_predictions = predict_batch(tree, df[testing], features_all)
-            accuracy_ratio = tree_predictions['accuracy'].sum()/len(tree_predictions)
-            total_accuracy += accuracy_ratio
-            print(f'Accuracy of the tree No: {session+1} on set {testing+1} is {accuracy_ratio:.2%}')
-            # print("=" * 90)
-        final_accuracy=total_accuracy/rand_sessions
-        print(f'Average accuracy of the tree No: {session + 1} on {sessions} training sets is {final_accuracy:.2%}')
-        print("=" * 90)
-        if final_accuracy > accuracy_ratio_best:
-            print('better tree lol')
-            accuracy_ratio_best = accuracy_ratio
-            tree_best = tree
-            best_index = session+1
-            df_trained = df[session]
-    return tree_best, df_trained, final_accuracy, best_index
+# Train multiple trees on random data slices
 
 
 tree_best, df_trained, final_accuracy, best_index = train_trees(processed_df, percent=rand_percent, sessions=rand_sessions)
@@ -531,7 +539,8 @@ exec4 = time4 - time3
 execution_time = end_time - start_time
 print(f"Time part 1: {exec1:7.3f} seconds - loading modules and processing the data")
 print(f"Time part 2: {exec2:7.3f} seconds - single tree build time")
-print(f"Time part 3: {exec3:7.3f} seconds - full training")
+print(f"Time part 3: {exec3:7.3f} seconds - full training of {rand_sessions} trees on {rand_percent/100:.1%} of data")
+print(f"Within part 3: {time_predictions:7.3f} seconds - spent on calculating accuracy/predictions")
 print(f"Time part 4: {exec4:7.3f} seconds - final testing")
 print(f"Total execution time: {execution_time:.4f} seconds")
 
