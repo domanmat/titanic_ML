@@ -27,7 +27,7 @@ def gini_X_impurity(group,features):
     # Calculate Gini impurity for each df
     if len(group) == 0:
         return 0
-    # p_unique = df[features].value_counts()
+    # p_unique = df[features_train].value_counts()
     # print(p_unique)
     gini_x=[]
     group_len = len(group)
@@ -48,14 +48,14 @@ def calc_tree_node(df, features):
 
     Parameters:
     - df: pandas DataFrame with processed df_processed
-    - features: search features included in the ML process
+    - features_train: search features_train included in the ML process
 
     Returns:
     - best_split_param: optimal value for splitting
     - best_w_gini: weighted Gini impurity at the optimal split
     """
 
-    # features = ['Pclass', 'Sex', 'Age', 'SibSp', 'Parch', 'Fare']
+    # features_train = ['Pclass', 'Sex', 'Age', 'SibSp', 'Parch', 'Fare']
     best_w_gini = float('inf')
     best_feature = None
     best_split_param = None
@@ -133,7 +133,7 @@ def build_decision_tree(df, features, max_depth, gini_threshold, min_group, curr
 
     Parameters:
     - df: DataFrame to split
-    - features: list of feature column names
+    - features_train: list of feature column names
     - max_depth: maximum depth of the tree
     - gini_threshold: stop splitting if Gini impurity <= this value
     - current_depth: current depth in the tree (used for recursion)
@@ -332,7 +332,7 @@ def predict_batch(tree, df, features):
     Parameters:
     - tree: decision tree dictionary structure
     - df: DataFrame with samples to predict
-    - features: list of feature names used in the model
+    - features_train: list of feature names used in the model
 
     Returns:
     - predictions: list of predictions
@@ -388,6 +388,7 @@ def train_trees(processed_df, percent, sessions):
     print("Generating data slices...")
     df_slices = []
     for session in range(sessions):
+        # random_seed if set would be useless
         df_tmp, _ = df_random_slice(processed_df, percent=percent, random_seed=None)
         df_slices.append(df_tmp)
 
@@ -396,8 +397,8 @@ def train_trees(processed_df, percent, sessions):
         total_accuracy=0
 
         # Build tree
-        tree = build_decision_tree(df_slices[session], features, max_depth,
-            gini_threshold=gini_threshold, min_group=min_group)
+        tree = build_decision_tree(df_slices[session], features_train, max_depth,
+                                   gini_threshold=gini_threshold, min_group=min_group)
 
         # Evaluate on all test sets
         accuracies = []
@@ -432,7 +433,7 @@ def train_trees(processed_df, percent, sessions):
     return tree_best, df_trained, accuracy_ratio_best, best_index, trained_trees
 
 
-def predict_ensemble(trained_trees, df, features_all, threshold=0.5):
+def predict_ensemble(trained_trees, df, features_all, threshold):
     """
     Make predictions using ensemble of trained trees with majority voting.
 
@@ -533,9 +534,9 @@ file_path = r"C:\Users\Mateusz\Downloads\titanic\train.csv"
 df = pd.read_csv(file_path)
 
 features_all = ['PassengerId', 'Survived', 'Pclass', 'Sex', 'Age', 'SibSp', 'Parch', 'Fare', 'Cabin', 'Embarked']
-# features = ['Pclass', 'Sex', 'Age', 'SibSp', 'Parch', 'Fare', 'Cabin', 'Embarked'] #Embarked nawet pogorszyło fit
-# features = ['Pclass', 'Sex', 'Age', 'SibSp', 'Parch', 'Fare', 'Cabin']
-features = ['Pclass', 'Sex', 'Age', 'SibSp', 'Parch', 'Fare']
+# features_train = ['Pclass', 'Sex', 'Age', 'SibSp', 'Parch', 'Fare', 'Cabin', 'Embarked'] #Embarked nawet pogorszyło fit
+# features_train = ['Pclass', 'Sex', 'Age', 'SibSp', 'Parch', 'Fare', 'Cabin']
+features_train = ['Pclass', 'Sex', 'Age', 'SibSp', 'Parch', 'Fare']
 
 # Inspect original df_processed
 print(("=" * 60)+"\n### ORIGINAL DATA INSPECTION ###")
@@ -553,24 +554,23 @@ data_inspection.check(processed_df, detailed=False)  # Change to False for summa
 
 # PARAMETERS FOR TRAINING
 min_group = 1
-max_depth = 10
+max_depth = 13
 gini_threshold = 0.01
-rand_percent = 70
-rand_sessions = 20
-
-
-########## SINGLE SLICE
-# Get a slice, usage
-# df, train_indices = df_random_slice(processed_df, percent=rand_percent, random_seed=None)
-df, train_indices = df_random_slice(processed_df, percent=rand_percent, random_seed=21)
+rand_percent = 80
+rand_sessions = 10
 
 time1 = time.time()
-# Build A SINGLE tree, using build_decision_tree
-print("\n" + "=" * 60 + "\n### BUILDING DECISION TREE ###" + "\n"+ ("=" * 60))
-tree = build_decision_tree(df, features, max_depth, gini_threshold=gini_threshold, min_group=min_group)
-time2 = time.time()
 
-# Print the tree structure
+########## BUILD A SINGLE TREE ON A RANDOM SLICE
+# Get a slice, usage
+# df, train_indices = df_random_slice(processed_df, percent=rand_percent, random_seed=None) # no random seed
+df, train_indices = df_random_slice(processed_df, percent=rand_percent, random_seed=21)
+
+# Build A SINGLE tree, using build_decision_tree on the slice
+print("\n" + "=" * 60 + "\n### BUILDING DECISION TREE ###" + "\n"+ ("=" * 60))
+tree = build_decision_tree(df, features_train, max_depth, gini_threshold=gini_threshold, min_group=min_group)
+
+# Print the first example tree structure
 print("\n" + "=" * 60 + "\n### DECISION TREE STRUCTURE ###" + "\n" + ("=" * 60))
 print(f"Root: size={tree['size']}, survival_rate={tree['survival_rate']:.2%}")
 # use print_tree function
@@ -579,16 +579,17 @@ if not tree['leaf']:
     print_tree(tree['right'], "", False)
 print("=" * 60)
 print(f"Final score of the obtained tree on training data: {total_score} out of {tree['size']}, giving {total_score/tree['size']:.2%} accuracy")
-########## SINGLE SLICE
-
+########## BUILD A SINGLE TREE ON A RANDOM SLICE
 
 time2 = time.time()
 
-# Train multiple trees on random data slices
+# Train set of trees on random data slices
+# random_seed is here useless
 tree_best, df_trained, final_accuracy, best_index, trained_trees = train_trees(processed_df, percent=rand_percent, sessions=rand_sessions)
 tree_predictions = predict_batch(tree_best, df_trained, features_all)
-accuracy_ratio = tree_predictions['accuracy'].sum()/len(tree_predictions)
+accuracy_ratio = tree_predictions['accuracy'].mean()
 score = tree_predictions['accuracy'].sum()
+# Results for decision tree training
 print(f"Final score of the obtained tree No.{best_index}: \n\t"
       f"on its own set No.{best_index}: {score} out of {tree_best['size']}, giving {accuracy_ratio:.2%} accuracy, \n\t "
       f"on all training data: {final_accuracy:.2%} averaged.")
@@ -598,38 +599,36 @@ time3 = time.time()
 # Print the best trained tree structure
 tree = tree_best
 print("\n" + "=" * 60 + "\n### DECISION TREE STRUCTURE ###" + "\n" + ("=" * 60))
-print(f"Root: size={tree['size']}, survival_rate={tree['survival_rate']:.2%}")
+print(f"Root: size={tree_best['size']}, survival_rate={tree_best['survival_rate']:.2%}")
 # use print_tree function
-if not tree['leaf']:
-    print_tree(tree['left'], "", True)
-    print_tree(tree['right'], "", False)
+if not tree_best['leaf']:
+    print_tree(tree_best['left'], "", True)
+    print_tree(tree_best['right'], "", False)
 print("=" * 60)
 
-# Results
-df_predictions = predict_batch(tree, df, features_all)
-# df_predictions=pd.DataFrame({"PassengerId":col_pass_id,"predictions":predictions, "real status":real_status, "accuracy":col_accuracy})
+# Results for decision tree training - repeat printing
 print(f"Final score of the obtained tree No.{best_index}: \n\t"
       f"on its own set No.{best_index}: {score} out of {tree_best['size']}, giving {accuracy_ratio:.2%} accuracy,\n\t "
       f"on all training data: {final_accuracy:.2%} averaged.")
 
-# Test predictions on full dataset = processed_df
-df_predictions = predict_batch(tree, processed_df, features_all)
-accuracy_ratio=df_predictions['accuracy'].mean()
+# Test predictions on the full dataset (processed_df)
+best_tree_prediction = predict_batch(tree_best, processed_df, features_all)
+accuracy_ratio=best_tree_prediction['accuracy'].mean()
 print(f"Accuracy on full data = {accuracy_ratio:.2%}\n")
-
 
 # Predictions of the random forest
 predict_RF = predict_ensemble(trained_trees, processed_df, features_all, threshold=0.5)
 RF_score = predict_RF['accuracy'].mean()
 print(f"Accuracy of the Random Forest algorithm = {RF_score:.2%}\n")
 
+'''
 # RF PERFORMANCE
 # max_depth=10, mingroup=2, train on 70% and 10 trees = 90.01% vs 88.10% for a single tree, 5.3 sec
 # max_depth=10, mingroup=1, train on 50% and 30 trees = 94.34% vs 89.34% for a single tree, 26.7 sec
 # max_depth=10, mingroup=1, train on 70% and 10 trees = 95.17% vs 91.69% for a single tree, 9.6 sec
 # max_depth=11, mingroup=1, train on 70% and 10 trees = 96.07% vs 92.03% for a single tree, 12.4 sec
 # max_depth=10, mingroup=1, train on 70% and 20 trees = 95.17% vs 91.69% for a single tree, 23.7 sec
-
+---
 # max_depth=10, mingroup=1, train on 30% and 2 trees = 81.37% vs 82.83% for a single tree, 1.9 sec
 # max_depth=10, mingroup=1, train on 30% and 3 trees = 86.42% vs 82.83% for a single tree, 1.9 sec
 # max_depth=10, mingroup=1, train on 30% and 4 trees = 85.97% vs 82.83% for a single tree, 2.6 sec
@@ -649,7 +648,8 @@ print(f"Accuracy of the Random Forest algorithm = {RF_score:.2%}\n")
 # max_depth=11, mingroup=1, train on 80% and 20 trees= 95.96% vs 92.59% for a single tree, 19.9sec
 # max_depth=11, mingroup=1, train on 80% and 20 trees= 96.52% vs 93.15% for a single tree, 23.7sec
 # max_depth=12, mingroup=1, train on 80% and 20 trees= 97.53% vs 93.17% for a single tree, 26.1sec
-# max_depth=13, mingroup=1, train on 80% and 20 trees= 97.98% vs 93.17% for a single tree, 27.1sec
+# max_depth=13, mingroup=1, train on 80% and 20 trees= 97.98% vs 94.28% for a single tree, 27.1sec
+'''
 
 time4 = time.time()
 

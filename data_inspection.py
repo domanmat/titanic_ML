@@ -1,4 +1,5 @@
 import pandas as pd
+
 def check(df, detailed=True):
     """
     Inspect the dataset for missing df_processed.
