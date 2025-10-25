@@ -332,6 +332,3 @@ This project demonstrates several key concepts in machine learning:
 
 > **Note**: This is an educational project demonstrating decision tree and ensemble concepts from scratch. For production use, consider established libraries like scikit-learn with more robust implementations and additional features.
 
----
-
-**Made with ❤️ for learning machine learning from scratch**
