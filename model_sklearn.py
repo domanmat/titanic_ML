@@ -13,7 +13,7 @@ import io
 import os
 import sys
 
-# Start timing
+# Start timing#
 start_time = time.time()
 print("Executing the code...")
 
