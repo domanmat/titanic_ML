@@ -1,6 +1,9 @@
-# Titanic Machine Learning Project
+# 🚢 Titanic Survival Prediction using Decision Trees & Random Forest
 
-A custom implementation of a decision tree classifier with ensemble learning for predicting survival on the Titanic dataset, built from scratch using Python and pandas.
+[![Python](https://img.shields.io/badge/Python-3.7+-blue.svg)](https://www.python.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+A custom implementation of a Decision Tree classifier with ensemble learning for predicting survival on the Titanic dataset, built from scratch using Python and pandas.
 
 ## 📋 Table of Contents
 
@@ -18,7 +21,7 @@ A custom implementation of a decision tree classifier with ensemble learning for
 
 ## 🎯 Overview
 
-This project implements a decision tree algorithm from scratch to predict passenger survival on the Titanic. Unlike using pre-built libraries like scikit-learn, this implementation provides full control over the tree-building process and includes a custom ensemble training method that builds multiple trees on random data subsets to find the best performing model.
+This project implements a decision tree algorithm **from scratch** to predict passenger survival on the Titanic. Unlike using pre-built libraries like scikit-learn, this implementation provides full control over the tree-building process and includes a custom ensemble training method that builds multiple trees on random data subsets to find the best performing model.
 
 ## ✨ Features
 
@@ -45,7 +48,7 @@ numpy
 matplotlib
 ```
 
-Python version: 3.7+
+**Python version**: 3.7+
 
 ## 🚀 Installation
 
@@ -69,14 +72,11 @@ pip install pandas numpy matplotlib
 
 ## 💻 Usage
 
-### Basic Usage
-
 Run the main script to train and evaluate the model:
+
 ```bash
 python main.py
 ```
-
-### Customization
 
 Edit the configuration variables in `main.py`:
 
@@ -85,16 +85,16 @@ Edit the configuration variables in `main.py`:
 features = ['Pclass', 'Sex', 'Age', 'SibSp', 'Parch', 'Fare']
 
 # Tree parameters
-max_depth = 10          # Maximum depth of the tree
-gini_threshold = 0.01   # Minimum Gini impurity to continue splitting
-min_group = 1           # Minimum samples per leaf node
+max_depth = 10              # Maximum depth of the tree
+gini_threshold = 0.01       # Minimum Gini impurity to continue splitting
+min_group = 1               # Minimum samples per leaf node
 
 # Ensemble training parameters
-rand_percent = 70       # Percentage of data to use for each tree
-rand_sessions = 10      # Number of trees to train and evaluate
+rand_percent = 70           # Percentage of data to use for each tree
+rand_sessions = 10          # Number of trees to train and evaluate
 ```
 
-### Enable Visualization
+### 📊 Visualization
 
 Uncomment the visualization line in `main.py`:
 
@@ -112,12 +112,12 @@ titanic_ML/
 ├── main.py                         # Main execution script
 ├── data_inspection.py              # Data inspection and missing value analysis
 ├── data_process.py                 # Data preprocessing and type optimization
-├── gini_Y_impurity.py             # Gini impurity calculation for target variable
-├── survival_counter.py            # Accuracy tracking utility
-├── visualize_survival_data.py     # Scatter plot generation
-├── train.csv                      # Training dataset (download separately)
-├── README.md                      # This file
-└── Figure_1.pdf                   # Generated visualization (if enabled)
+├── gini_Y_impurity.py              # Gini impurity calculation for target variable
+├── survival_counter.py             # Accuracy tracking utility
+├── visualize_survival_data.py      # Scatter plot generation
+├── train.csv                       # Training dataset (download separately)
+├── README.md                       # This file
+└── Figure_1.pdf                    # Generated visualization (if enabled)
 ```
 
 ### Module Descriptions
@@ -131,19 +131,20 @@ titanic_ML/
 
 ## 🔍 How It Works
 
-### 1. Data Preprocessing
+### Data Preprocessing
 
 The `data_process.calc()` function:
-- Fills missing values:
+
+- **Fills missing values**:
   - Age: `-1` for unknown ages
   - Cabin: `'None'` for missing cabin information
   - Embarked: `'None'` for missing embarkation port
-- Optimizes data types (int8, float32, float64) for memory efficiency
-- Rounds Age to 2 decimal places
-- Encodes categorical variables (Sex: male=0, female=1)
-- Truncates strings to reasonable lengths
+- **Optimizes data types** (int8, float32, float64) for memory efficiency
+- **Rounds Age** to 2 decimal places
+- **Encodes categorical variables** (Sex: male=0, female=1)
+- **Truncates strings** to reasonable lengths
 
-### 2. Decision Tree Algorithm
+### Decision Tree Algorithm
 
 The algorithm recursively splits the dataset to maximize survival prediction accuracy:
 
@@ -156,7 +157,7 @@ The algorithm recursively splits the dataset to maximize survival prediction acc
    - Groups that would split into sizes smaller than `min_group`
 4. **Leaf Nodes**: Final predictions based on majority class in each leaf
 
-### 3. Ensemble Training Method
+### Ensemble Training
 
 The `train_trees()` function implements a custom ensemble approach:
 
@@ -167,41 +168,44 @@ The `train_trees()` function implements a custom ensemble approach:
 
 This approach helps prevent overfitting and improves generalization.
 
-### 4. Key Functions
+### Key Functions
 
-#### Data Processing
+**Data Processing:**
 - `data_inspection.check()`: Analyzes missing values and data structure
 - `data_process.calc()`: Cleans and prepares data for modeling
 
-#### Tree Building
+**Tree Building:**
 - `calc_tree_node()`: Finds optimal split for a given node using vectorized operations
 - `build_decision_tree()`: Recursively constructs the tree
 - `gini_Y_impurity.calc()`: Computes Gini impurity efficiently
 - `gini_X_impurity()`: Calculates feature heterogeneity
 
-#### Prediction & Evaluation
+**Prediction:**
 - `predict_single()`: Makes prediction for one sample
 - `predict_batch()`: Makes predictions on multiple samples
+
+**Training:**
 - `train_trees()`: Ensemble training with cross-validation
 - `print_tree()`: Visualizes tree structure with color-coded output
 
-#### Utilities
+**Utilities:**
 - `df_random_slice()`: Samples random subset of data
 - `survival_counter.calc()`: Tracks prediction accuracy
 
 ## ⚙️ Configuration
 
-### Feature Selection
+### Available Features
 
-Available features:
-- `Pclass`: Passenger class (1=1st, 2=2nd, 3=3rd)
-- `Sex`: Gender (0=male, 1=female)
-- `Age`: Age in years (-1 for unknown, rounded to 2 decimals)
-- `SibSp`: Number of siblings/spouses aboard
-- `Parch`: Number of parents/children aboard
-- `Fare`: Ticket fare
-- `Cabin`: Cabin number (optional, encoded)
-- `Embarked`: Port of embarkation (optional, S/C/Q)
+| Feature | Description | Values |
+|---------|-------------|--------|
+| `Pclass` | Passenger class | 1=1st, 2=2nd, 3=3rd |
+| `Sex` | Gender | 0=male, 1=female |
+| `Age` | Age in years | -1 for unknown, rounded to 2 decimals |
+| `SibSp` | Number of siblings/spouses aboard | Integer |
+| `Parch` | Number of parents/children aboard | Integer |
+| `Fare` | Ticket fare | Float |
+| `Cabin` | Cabin number | Optional, encoded |
+| `Embarked` | Port of embarkation | Optional, S/C/Q |
 
 **Recommended**: Use `['Pclass', 'Sex', 'Age', 'SibSp', 'Parch', 'Fare']` for best balance of performance and speed.
 
@@ -221,33 +225,31 @@ Available features:
 | `rand_sessions` | Number of trees to train | 5-20 | 10 |
 | `random_seed` | Seed for reproducibility | Any int or None | 21 |
 
-## 📊 Results
-
-### Output Format
+## 📈 Results
 
 The model provides comprehensive output including:
 
-1. **Training Progress**: Detailed logging of tree construction at each depth level
-2. **Tree Structure**: Visual representation with color-coded leaves (green) and decision rules
-3. **Ensemble Results**: Accuracy of each tree on all validation sets
-4. **Final Metrics**: 
-   - Accuracy on training subset
-   - Average accuracy across all validation sets
-   - Accuracy on full dataset
+- **Training Progress**: Detailed logging of tree construction at each depth level
+- **Tree Structure**: Visual representation with color-coded leaves (green) and decision rules
+- **Ensemble Results**: Accuracy of each tree on all validation sets
+- **Final Metrics**:
+  - Accuracy on training subset
+  - Average accuracy across all validation sets
+  - Accuracy on full dataset
 
 ### Example Output
 
 ```
-Final score of the obtained tree No.3: 
-	on its own set No.3: 424 out of 623, giving 68.06% accuracy,
-	on all training data: 64.23% averaged.
-
+Final score of the obtained tree No.3:
+  on its own set No.3: 424 out of 623, giving 68.06% accuracy,
+  on all training data: 64.23% averaged.
+  
 Accuracy on full data = 79.91%
 
-Time part 1:   0.234 seconds - loading modules and processing the data
-Time part 2:   8.456 seconds - single tree build time
-Time part 3:  85.123 seconds - full training
-Time part 4:   0.892 seconds - final testing
+Time part 1: 0.234 seconds - loading modules and processing the data
+Time part 2: 8.456 seconds - single tree build time
+Time part 3: 85.123 seconds - full training
+Time part 4: 0.892 seconds - final testing
 Total execution time: 94.7050 seconds
 ```
 
@@ -259,7 +261,7 @@ Total execution time: 94.7050 seconds
   - Single tree: 5-15 seconds
   - Ensemble (10 trees): 60-120 seconds
 
-## 🎨 Visualization
+### Visualization Output
 
 When enabled, the `visualize_survival_data.figure()` function generates:
 
@@ -272,21 +274,19 @@ When enabled, the `visualize_survival_data.figure()` function generates:
 
 This helps identify patterns and correlations between features and survival outcomes.
 
-## 🚀 Performance Optimizations
+### Performance Optimizations
 
 The implementation includes several optimizations:
 
-1. **Vectorized Gini Calculations**: Uses pandas vectorization instead of loops
-2. **Sorted Split Finding**: Sorts data once per feature, then uses `np.searchsorted()`
-3. **Lazy DataFrame Creation**: Only creates split DataFrames for the best split
-4. **Optimized Data Types**: Uses int8 and float32 to reduce memory footprint
-5. **Modular Design**: Separation of concerns improves maintainability
+- **Vectorized Gini Calculations**: Uses pandas vectorization instead of loops
+- **Sorted Split Finding**: Sorts data once per feature, then uses `np.searchsorted()`
+- **Lazy DataFrame Creation**: Only creates split DataFrames for the best split
+- **Optimized Data Types**: Uses int8 and float32 to reduce memory footprint
+- **Modular Design**: Separation of concerns improves maintainability
 
 ## 🤝 Contributing
 
 Contributions are welcome! Here are some ways to improve the project:
-
-### Potential Improvements
 
 - **Pruning**: Add post-pruning to reduce overfitting
 - **Feature Engineering**: Create interaction features or polynomial features
@@ -306,7 +306,7 @@ Contributions are welcome! Here are some ways to improve the project:
 
 ## 📄 License
 
-This project is open source and available under the MIT License.
+This project is open source and available under the [MIT License](LICENSE).
 
 ## 🙏 Acknowledgments
 
@@ -318,7 +318,9 @@ This project is open source and available under the MIT License.
 
 For questions or suggestions, please open an issue on GitHub.
 
-## 🔬 Educational Notes
+---
+
+## 📚 Learning Outcomes
 
 This project demonstrates several key concepts in machine learning:
 
@@ -328,6 +330,8 @@ This project demonstrates several key concepts in machine learning:
 - **Cross-Validation**: Evaluating models on multiple data subsets
 - **Overfitting Prevention**: Using depth limits, minimum group sizes, and purity thresholds
 
+> **Note**: This is an educational project demonstrating decision tree and ensemble concepts from scratch. For production use, consider established libraries like scikit-learn with more robust implementations and additional features.
+
 ---
 
-**Note**: This is an educational project demonstrating decision tree and ensemble concepts from scratch. For production use, consider established libraries like scikit-learn with more robust implementations and additional features.
+**Made with ❤️ for learning machine learning from scratch**
