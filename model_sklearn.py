@@ -27,7 +27,7 @@ path = os.path.join(directory, train_file)
 data_frame = pd.read_csv(path)
 # df_processed=data_frame.copy()
 
-# Select relevant features
+# Select relevant features_train
 features = ['Pclass', 'Sex', 'Age', 'SibSp', 'Parch', 'Fare']
 y = data_frame['Survived'].copy()
 
@@ -52,7 +52,7 @@ def preprocess(data,features):
     # Handle missing values in Fare (fill with -1)
     X['Fare'] = X['Fare'].fillna(-1)
 
-    # Ensure all features are numeric and handle any remaining missing values
+    # Ensure all features_train are numeric and handle any remaining missing values
     X = X.fillna(0)
     return(X)
 
@@ -127,7 +127,7 @@ def export_tree(model, feature_names):
 
 # Print the decision tree
 # print("Decision Tree Structure:")
-# print(export_tree(final_model, features))
+# print(export_tree(final_model, features_train))
 model_tree = (export_tree(final_model, features))
 tree_file = os.path.join(directory, 'result_tree.txt')
 with open(tree_file, "w") as txt:
@@ -151,7 +151,7 @@ def example_prediction(model_test, PassengerId):
     row=PassengerId-1
     example_df=data_frame.loc[[row]] # data extracted for analysis
     example=data_frame.iloc[row] # data extracted
-    # features = ['PassengerId', 'Pclass', 'Sex', 'Age', 'SibSp', 'Parch', 'Fare']
+    # features_train = ['PassengerId', 'Pclass', 'Sex', 'Age', 'SibSp', 'Parch', 'Fare']
     processed=preprocess(example_df,features)
     prediction = model_test.predict(processed)
     prob = model_test.predict_proba(processed)[0][1]
@@ -193,7 +193,7 @@ def final_test(model):
         print(f"\nError saving CSV to {result_file}: {e}")
 
 # # Saving the tree plot - lasts long
-# save_tree_plot(final_model, features, directory, 'plot_tree.pdf')
+# save_tree_plot(final_model, features_train, directory, 'plot_tree.pdf')
 # # Calculating for an example
 # example_prediction(final_model, 1)
 final_test(final_model)
