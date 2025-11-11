@@ -679,6 +679,7 @@ print(f"Accuracy of the Random Forest algorithm = {RF_score:.2%}\n")
 2. Dodać samooptymalizację głębokości drzewa (da się?)
 3. Rozdzielić funkcję na main i powiększyć opcje 
 4. Dodać cross-validation matrix czy coś, korelacje pomiędzy zmiennymi
+5. dodać, by dane do testowania były usuwane z danych do uczenia modelu 
 '''
 
 time4 = time.time()
