@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 
+import correlation_analysis
 import survival_counter
 import gini_Y_impurity
 import data_inspection
@@ -515,13 +516,13 @@ def predict_ensemble(trained_trees, df, features_all, threshold):
 
     print(f"\nEnsemble prediction complete!")
     print(f"Total samples: {n_samples} with {total_mistakes} mistakes")
-    print(f"Unanimous decisions (>95%):     {unanimous_count:4d} samples, "
+    print(f"Unanimous decisions (>95%):       {unanimous_count:4d} samples, "
           f"{unanimous_mistakes:3d} mistakes "
           f"({unanimous_mistakes / unanimous_count * 100 if unanimous_count > 0 else 0:.1f}%)")
     print(f"High agreement (95-70%):          {high_agreement_count:4d} samples, "
           f"{high_agreement_mistakes:3d} mistakes "
           f"({high_agreement_mistakes / high_agreement_count * 100 if high_agreement_count > 0 else 0:.1f}%)")
-    print(f"Split decisions (50-70%):       {split_count:4d} samples, "
+    print(f"Split decisions (50-70%):         {split_count:4d} samples, "
           f"{split_mistakes:3d} mistakes "
           f"({split_mistakes / split_count * 100 if split_count > 0 else 0:.1f}%)")
 
@@ -532,11 +533,6 @@ def predict_ensemble(trained_trees, df, features_all, threshold):
 # Load the CSV file
 file_path = r"C:\Users\Mateusz\Downloads\titanic\train.csv"
 df = pd.read_csv(file_path)
-
-features_all = ['PassengerId', 'Survived', 'Pclass', 'Sex', 'Age', 'SibSp', 'Parch', 'Fare', 'Cabin', 'Embarked']
-# features_train = ['Pclass', 'Sex', 'Age', 'SibSp', 'Parch', 'Fare', 'Cabin', 'Embarked'] #Embarked nawet pogorszyło fit
-# features_train = ['Pclass', 'Sex', 'Age', 'SibSp', 'Parch', 'Fare', 'Cabin']
-features_train = ['Pclass', 'Sex', 'Age', 'SibSp', 'Parch', 'Fare']
 
 # Inspect original df_processed
 print(("=" * 60)+"\n### ORIGINAL DATA INSPECTION ###")
@@ -549,22 +545,49 @@ processed_df = data_process.calc(df, detailed=False)
 print(("=" * 60)+"\n### PROCESSED DATA INSPECTION ###")
 data_inspection.check(processed_df, detailed=False)  # Change to False for summary only
 
+# features_all is a list of all variable parameters including the target
+features_all = list(df.head())
+
+print("\n### FOUND PARAMETERS IN THE DATA ###")
+print(features_all)
+# features_all = ['PassengerId', 'Survived', 'Pclass', 'Sex', 'Age', 'SibSp', 'Parch', 'Fare', 'Cabin', 'Embarked']
+
+corr_results, features_train = correlation_analysis.comprehensive_correlation_analysis(
+    processed_df,
+    target='Survived',
+    corr_threshold=0.01,
+    visualize=True,
+    # categorical_cols=['Pclass', 'Sex', 'Cabin', 'Embarked', 'Deck', 'Title']
+    # categorical_cols=['Pclass', 'Name', 'Sex', 'Ticket', 'Cabin', 'Embarked']
+    categorical_cols=['Cabin', 'Embarked']
+    # categorical_cols=None
+)
+print("\n### TRAINING ON ###")
+print(features_train)
+# features_train.append('Age')
+# print(corr_results['feature_importance'])
+# features_train = ['Pclass', 'Sex', 'Age', 'SibSp', 'Parch', 'Fare', 'Cabin', 'Embarked'] #Embarked nawet pogorszyło fit
+# features_train = ['Pclass', 'Sex', 'Age', 'SibSp', 'Parch', 'Fare', 'Cabin']
+# features_train = ['Pclass', 'Sex', 'Age', 'SibSp', 'Parch', 'Fare']
+
+
 # # Visualize the survival df_processed (set to False to disable)
 # visualize_survival_data.figure(processed_df, enable_visualization=False)
 
-# PARAMETERS FOR TRAINING
-min_group = 1
-max_depth = 13
+# HYPER-PARAMETERS FOR TRAINING
+min_group = 2
+max_depth = 10
 gini_threshold = 0.01
-rand_percent = 80
+rand_percent = 50
 rand_sessions = 10
+rand_seed = 42
 
 time1 = time.time()
 
 ########## BUILD A SINGLE TREE ON A RANDOM SLICE
 # Get a slice, usage
 # df, train_indices = df_random_slice(processed_df, percent=rand_percent, random_seed=None) # no random seed
-df, train_indices = df_random_slice(processed_df, percent=rand_percent, random_seed=21)
+df, train_indices = df_random_slice(processed_df, percent=rand_percent, random_seed=rand_seed)
 
 # Build A SINGLE tree, using build_decision_tree on the slice
 print("\n" + "=" * 60 + "\n### BUILDING DECISION TREE ###" + "\n"+ ("=" * 60))
@@ -651,12 +674,24 @@ print(f"Accuracy of the Random Forest algorithm = {RF_score:.2%}\n")
 # max_depth=13, mingroup=1, train on 80% and 20 trees= 97.98% vs 94.28% for a single tree, 27.1sec
 '''
 
+''' DODAĆ 
+1. Dodać system rozpoznający kluczowe zmienne spośród zadanych i wybiera które bierze do analizy
+2. Dodać samooptymalizację głębokości drzewa (da się?)
+3. Rozdzielić funkcję na main i powiększyć opcje 
+4. Dodać cross-validation matrix czy coś, korelacje pomiędzy zmiennymi
+'''
+
 time4 = time.time()
 
 #ADD PRINTING TO A FILE
 # # for idx, row in df.iterrows():
 # #     df_predictions['predictions']==df_predictions['real status']:
 # if df_predictions['predictions'] == df_predictions['real status']:
+
+
+# summary
+print("Trained on features: ")
+print(features_train, "\n")
 
 
 # End timing
