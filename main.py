@@ -6,6 +6,7 @@ import survival_counter
 import gini_Y_impurity
 import data_inspection
 import data_process
+import split_data
 
 # import seaborn as sns
 
@@ -15,9 +16,9 @@ GREEN = "\033[32m"
 RED = "\033[31m"
 RESET = "\033[0m"
 
-import time
+from time import time
 # Start timing
-start_time = time.time()
+start_time = time()
 print("Executing the code...")
 
 total_score = 0
@@ -128,7 +129,7 @@ def calc_tree_node(df, features):
     return best_feature, best_split_param, best_w_gini, left_group_best, right_group_best
 
 
-def build_decision_tree(df, features, max_depth, gini_threshold, min_group, current_depth=0):
+def build_decision_tree(df, features, max_depth, gini_threshold, min_group, death_threshold, current_depth=0):
     """
     Recursively build a decision tree by splitting data until Gini threshold is met or max depth reached.
 
@@ -151,14 +152,14 @@ def build_decision_tree(df, features, max_depth, gini_threshold, min_group, curr
     global total_score
     # Zakładamy że wszyscy z komórki umierają albo przeżywają
     survival_r = df['Survived'].mean()
-    if survival_r >= 0.50:
+    if survival_r >= death_threshold:
         accuracy = df['Survived'].sum() / len(df)
     else:
         accuracy = (len(df) - df['Survived'].sum()) / len(df)
 
 
-    # Base cases: stop splitting
-    print(f"Depth {current_depth}: Splitting {len(df)} samples...")
+    # # Base cases: stop splitting
+    # print(f"Depth {current_depth}: Splitting {len(df)} samples...")
 
     # Calculating gini impurity of the parameters set
     df_x=gini_X_impurity(df,features)
@@ -166,8 +167,8 @@ def build_decision_tree(df, features, max_depth, gini_threshold, min_group, curr
 
 
     if current_depth > max_depth:
-        print(f"Depth {current_depth}: Reached maximum depth with gini={gini_branch:.4f}")
-        print("=" * 60)
+        # print(f"Depth {current_depth}: Reached maximum depth with gini={gini_branch:.4f}")
+        # print("=" * 60)
         total_score = survival_counter.calc(df['Survived'].sum(), total_score, len(df), survival_r)
         return {
             'leaf': True,
@@ -182,8 +183,8 @@ def build_decision_tree(df, features, max_depth, gini_threshold, min_group, curr
     # min_group parameter
     elif len(df) < min_group:
         total_score = survival_counter.calc(df['Survived'].sum(), total_score, len(df), survival_r)
-        print(f"Depth {current_depth}: Group of {len(df)} <= {min_group}, it is too small")
-        print("=" * 60)
+        # print(f"Depth {current_depth}: Group of {len(df)} <= {min_group}, it is too small")
+        # print("=" * 60)
         return {
             'leaf': True,
             'depth': current_depth,
@@ -193,7 +194,7 @@ def build_decision_tree(df, features, max_depth, gini_threshold, min_group, curr
             'accuracy': accuracy
         }
     elif len(df) == 0:
-        print(f"Depth {current_depth}: Empty dataframe")
+        # print(f"Depth {current_depth}: Empty dataframe")
         return {
             'leaf': True,
             'depth': current_depth,
@@ -205,9 +206,9 @@ def build_decision_tree(df, features, max_depth, gini_threshold, min_group, curr
     # Check if Gini threshold for splitting is met and if it is, creates Leaf boolean
     # if best_w_gini <= gini_threshold:
     elif gini_branch <= gini_threshold:
-        # Creates Leaf with gini information
-        print(f"Depth {current_depth}: Gini before splitting {gini_branch:.4f} <= threshold {gini_threshold}")
-        print("=" * 90)
+        # # Creates Leaf with gini information
+        # print(f"Depth {current_depth}: Gini before splitting {gini_branch:.4f} <= threshold {gini_threshold}")
+        # print("=" * 90)
         total_score = survival_counter.calc(df['Survived'].sum(), total_score, len(df), survival_r)
         return {
             'leaf': True,
@@ -218,12 +219,11 @@ def build_decision_tree(df, features, max_depth, gini_threshold, min_group, curr
             'accuracy': accuracy
         }
     elif x_gini <= gini_threshold:
-        # print(df)
-        # Creates Leaf where there is a set of the same X parameters, but different Survive values
-        # Can't be split based on Features
-        print(f"Depth {current_depth}: Gini of branch {gini_branch:.4f} > {gini_threshold} "
-              f"but set can't be split as g_impurity of parameters = {x_gini:.3f}")
-        print("=" * 90)
+        # # Creates Leaf where there is a set of the same X parameters, but different Survive values
+        # # Can't be split based on Features
+        # print(f"Depth {current_depth}: Gini of branch {gini_branch:.4f} > {gini_threshold} "
+        #       f"but set can't be split as g_impurity of parameters = {x_gini:.3f}")
+        # print("=" * 90)
         total_score = survival_counter.calc(df['Survived'].sum(), total_score, len(df), survival_r)
         return {
             'leaf': True,
@@ -238,9 +238,9 @@ def build_decision_tree(df, features, max_depth, gini_threshold, min_group, curr
         best_feature, best_split_param, best_w_gini, left_group, right_group = calc_tree_node(df, features)
         #prevent too small groups after splitting
         if len(left_group) < min_group or len (right_group) < min_group:
-            print(f"Depth {current_depth + 1}: Splitting down to group of lengths {len(left_group)} "
-                  f"and {len(right_group)} <= {min_group}, too small")
-            print("=" * 90)
+            # print(f"Depth {current_depth + 1}: Splitting down to group of lengths {len(left_group)} "
+            #       f"and {len(right_group)} <= {min_group}, too small")
+            # print("=" * 90)
             return {
                 'leaf': True,
                 'depth': current_depth,
@@ -250,13 +250,13 @@ def build_decision_tree(df, features, max_depth, gini_threshold, min_group, curr
                 'accuracy': accuracy
             }
         else:
-            L=len(left_group)
-            R=len(right_group)
-            print(f"Depth {current_depth}: Splitted into "
-                  f"L={len(left_group)} samples ({best_feature}<={best_split_param}) and "
-                  f"R={len(right_group)} samples ({best_feature}>{best_split_param}), "
-                  # f"using {best_feature} = {best_split_param}, "
-                  f"yielding w_gini = {best_w_gini:.4f}")
+            # L=len(left_group)
+            # R=len(right_group)
+            # print(f"Depth {current_depth}: Splitted into "
+            #       f"L={len(left_group)} samples ({best_feature}<={best_split_param}) and "
+            #       f"R={len(right_group)} samples ({best_feature}>{best_split_param}), "
+            #       # f"using {best_feature} = {best_split_param}, "
+            #       f"yielding w_gini = {best_w_gini:.4f}")
 
             # Create node with split information
             node = {
@@ -270,13 +270,13 @@ def build_decision_tree(df, features, max_depth, gini_threshold, min_group, curr
                 'survival_rate': survival_r,
                 'accuracy': accuracy
             }
-            print("=" * 90)
-            # exit()
-            # Recursively build left and right branches
-            print(f"Depth {current_depth+1}: Splitting left branch: ({best_feature} <= {best_split_param})")
-            node['left'] = build_decision_tree(left_group, features, max_depth, gini_threshold, min_group, current_depth + 1)
-            print(f"Depth {current_depth+1}: Splitting right branch: ({best_feature} > {best_split_param})")
-            node['right'] = build_decision_tree(right_group, features, max_depth, gini_threshold, min_group, current_depth + 1)
+            # print("=" * 90)
+            # # exit()
+            # # Recursively build left and right branches
+            # print(f"Depth {current_depth+1}: Splitting left branch: ({best_feature} <= {best_split_param})")
+            # print(f"Depth {current_depth+1}: Splitting right branch: ({best_feature} > {best_split_param})")
+            node['left'] = build_decision_tree(left_group, features, max_depth, gini_threshold, min_group, death_threshold, current_depth + 1)
+            node['right'] = build_decision_tree(right_group, features, max_depth, gini_threshold, min_group, death_threshold, current_depth + 1)
             #rozbudowuje do końca węzły, aż nie napotka któregoś limitera - albo threshold, albo max_depth
     return node
 
@@ -309,8 +309,10 @@ def print_tree(node, prefix="", is_left=True):
         print_tree(node['right'], new_prefix, False)
 
 
-def df_random_slice(df, percent, random_seed):
-    """ Select a percentage of random rows.
+def train_df_slicing(df, percent, random_seed):
+    """
+    PASTING - sampling with replacement - losowanie ze zwracaniem
+    Select a percentage of random rows.
         Parameters:
     - df: pandas loaded DataFrame
     - percent: fraction of rows to select (0.0 to 1.0)
@@ -320,13 +322,13 @@ def df_random_slice(df, percent, random_seed):
         np.random.seed(random_seed)
 
     n_samples = int(len(df) * percent/100)
-    indices = np.random.choice(len(df), size=n_samples, replace=False)
+    indices = np.random.choice(len(df), size=n_samples, replace=True)
     sliced_df = df.iloc[indices].copy()
 
     return sliced_df, indices
 
 
-def predict_batch(tree, df, features):
+def predict_batch(tree, df, features, death_threshold):
     """
     Predict survival for all data using whole tree.
 
@@ -338,8 +340,9 @@ def predict_batch(tree, df, features):
     Returns:
     - predictions: list of predictions
     """
-    time_pred_start = time.time()
+    time_pred_start = time()
     n_samples = len(df)
+    # global death_threshold
 
     # Convert to numpy arrays once
     feature_arrays = {feature: df[feature].values for feature in features}
@@ -359,11 +362,11 @@ def predict_batch(tree, df, features):
             else:
                 node = node['right']
 
-        predictions[i] = 1 if node['survival_rate'] >= 0.5 else 0
+        predictions[i] = 1 if node['survival_rate'] >= death_threshold else 0
 
     accuracy = (predictions == survived).astype(np.int8)
 
-    time_pred_end = time.time()
+    time_pred_end = time()
     global time_predictions
     time_predictions += (time_pred_end-time_pred_start)
 
@@ -375,12 +378,13 @@ def predict_batch(tree, df, features):
     })
 
 
-def train_trees(processed_df, percent, sessions):
+def train_trees(train_df, percent, sessions, max_depth, gini_threshold, min_group, death_threshold):
 
     accuracy_ratio_best = 0
     tree_best = None
     best_index = 0
     df_trained = None
+    global features_train
 
     # Store all trained trees with their metadata
     trained_trees = []
@@ -390,7 +394,7 @@ def train_trees(processed_df, percent, sessions):
     df_slices = []
     for session in range(sessions):
         # random_seed if set would be useless
-        df_tmp, _ = df_random_slice(processed_df, percent=percent, random_seed=None)
+        df_tmp, train_indices = train_df_slicing(train_df, percent=percent, random_seed=None)
         df_slices.append(df_tmp)
 
     for session in range(sessions):
@@ -399,19 +403,20 @@ def train_trees(processed_df, percent, sessions):
 
         # Build tree
         tree = build_decision_tree(df_slices[session], features_train, max_depth,
-                                   gini_threshold=gini_threshold, min_group=min_group)
+                                   gini_threshold, min_group, death_threshold)
 
         # Evaluate on all test sets
         accuracies = []
         for testing in range(sessions):
-            tree_predictions = predict_batch(tree, df_slices[testing], features_all)
+            tree_predictions = predict_batch(tree, df_slices[testing], features_all, death_threshold)
             accuracy_ratio = tree_predictions['accuracy'].mean()  # Faster than sum/len
             accuracies.append(accuracy_ratio)
-            print(f'Accuracy of tree {session + 1} on set {testing + 1}: {accuracy_ratio:.2%}')
+            if testing==session:
+                print(f'Accuracy of tree {session + 1:2d} on set {testing + 1:2d}:  {accuracy_ratio:.2%}')
 
         # Calculate average accuracy on all training data sets
         final_accuracy = sum(accuracies) / sessions
-        print(f'Average accuracy of tree {session+1}: {final_accuracy:.2%}')
+        print(f'Average accuracy of tree {session+1:2d}:    {final_accuracy:.2%}')
         print("=" * 90)
 
         # Store the trained tree with its metadata
@@ -464,11 +469,11 @@ def predict_ensemble(trained_trees, df, features_all, threshold):
             tree = tree_data
 
         # Get predictions from this tree
-        predictions = predict_batch(tree, df, features_all)
+        predictions = predict_batch(tree, df, features_all, death_threshold)
         all_predictions.append(predictions['predictions'].values)
 
-        if (i + 1) % 5 == 0 or (i + 1) == n_trees:
-            print(f"  Processed {i + 1}/{n_trees} trees...")
+        # if (i + 1) % 5 == 0 or (i + 1) == n_trees:
+        #     print(f"  Processed {i + 1}/{n_trees} trees...")
 
     # Stack all predictions: shape (n_trees, n_samples)
     all_predictions = np.array(all_predictions)
@@ -514,8 +519,6 @@ def predict_ensemble(trained_trees, df, features_all, threshold):
 
     total_mistakes = split_mistakes+high_agreement_mistakes+unanimous_mistakes
 
-    print(f"\nEnsemble prediction complete!")
-    print(f"Total samples: {n_samples} with {total_mistakes} mistakes")
     print(f"Unanimous decisions (>95%):       {unanimous_count:4d} samples, "
           f"{unanimous_mistakes:3d} mistakes "
           f"({unanimous_mistakes / unanimous_count * 100 if unanimous_count > 0 else 0:.1f}%)")
@@ -525,18 +528,35 @@ def predict_ensemble(trained_trees, df, features_all, threshold):
     print(f"Split decisions (50-70%):         {split_count:4d} samples, "
           f"{split_mistakes:3d} mistakes "
           f"({split_mistakes / split_count * 100 if split_count > 0 else 0:.1f}%)")
+    print(f"Total samples: {n_samples} with {total_mistakes} mistakes")
 
     return df_predictions
 
 
+def print_tree_structure(tree):
+    # Print the first example tree structure
+    print("\n" + "=" * 60 + "\n### DECISION TREE STRUCTURE ###" + "\n" + ("=" * 60))
+    print(f"Root: size={tree['size']}, survival_rate={tree['survival_rate']:.2%}")
+    # use print_tree function
+    if not tree['leaf']:
+        print_tree(tree['left'], "", True)
+        print_tree(tree['right'], "", False)
+    print("=" * 60)
 
+
+
+'''
+#####################################
+### MAIN PART OF THE CODE         ###
+#####################################
+'''
 # Load the CSV file
 file_path = r"C:\Users\Mateusz\Downloads\titanic\train.csv"
 df = pd.read_csv(file_path)
 
 # Inspect original df_processed
 print(("=" * 60)+"\n### ORIGINAL DATA INSPECTION ###")
-data_inspection.check(df, detailed=False)  # Change to False for summary only
+data_inspection.check(df, detailed=True)  # Change to False for summary only
 
 # Process the df_processed
 processed_df = data_process.calc(df, detailed=False)
@@ -556,60 +576,103 @@ corr_results, features_train = correlation_analysis.comprehensive_correlation_an
     processed_df,
     target='Survived',
     corr_threshold=0.01,
-    visualize=True,
-    # categorical_cols=['Pclass', 'Sex', 'Cabin', 'Embarked', 'Deck', 'Title']
-    # categorical_cols=['Pclass', 'Name', 'Sex', 'Ticket', 'Cabin', 'Embarked']
-    categorical_cols=['Cabin', 'Embarked']
-    # categorical_cols=None
+    visualize=False,
+    # categorical_columns=['Pclass', 'Sex', 'Cabin', 'Embarked', 'Deck', 'Title']
+    # categorical_columns=['Pclass', 'Name', 'Sex', 'Ticket', 'Cabin', 'Embarked']
+    categorical_columns=['Cabin', 'Embarked']
+    # categorical_columns=None
 )
+# Manual features train
+# features_train = ['Pclass', 'Sex', 'Age', 'SibSp', 'Parch', 'Fare', 'Cabin']
+features_train = ['Pclass', 'Sex', 'Age', 'SibSp', 'Parch', 'Fare']
+
+pd.set_option('display.max_columns', None)
+print(processed_df.head())
+
 print("\n### TRAINING ON ###")
 print(features_train)
-# features_train.append('Age')
 # print(corr_results['feature_importance'])
-# features_train = ['Pclass', 'Sex', 'Age', 'SibSp', 'Parch', 'Fare', 'Cabin', 'Embarked'] #Embarked nawet pogorszyło fit
-# features_train = ['Pclass', 'Sex', 'Age', 'SibSp', 'Parch', 'Fare', 'Cabin']
-# features_train = ['Pclass', 'Sex', 'Age', 'SibSp', 'Parch', 'Fare']
-
-
 # # Visualize the survival df_processed (set to False to disable)
 # visualize_survival_data.figure(processed_df, enable_visualization=False)
 
-# HYPER-PARAMETERS FOR TRAINING
-min_group = 2
+
+'''
+#####################################
+### HYPER-PARAMETERS FOR TRAINING ###
+#####################################
+'''
+# # manually set hyperparameters
+# min_group = 3
+# max_depth = 8
+# gini_threshold = 0.01
+# death_threshold = 0.50
+# n_estimators = 10
+
+# trained hyperparameters
+min_group = 5
 max_depth = 10
 gini_threshold = 0.01
-rand_percent = 50
-rand_sessions = 10
+death_threshold = 0.6
+n_estimators = 20
 rand_seed = 42
 
-time1 = time.time()
+rand_percent = 50 #percent of how much df_train is used for each single tree
+train_share = 0.6
+test_share = 0.2
+validation_share = 1 - train_share - test_share
+'''
+#####################################
+### HYPER-PARAMETERS FOR TRAINING ###
+#####################################
+'''
+time1 = time()
 
-########## BUILD A SINGLE TREE ON A RANDOM SLICE
+'''
+#####################################
+########## DATA SPLITTING to sets 
+#####################################
+'''
 # Get a slice, usage
 # df, train_indices = df_random_slice(processed_df, percent=rand_percent, random_seed=None) # no random seed
-df, train_indices = df_random_slice(processed_df, percent=rand_percent, random_seed=rand_seed)
+# df, train_indices = df_random_slice(processed_df, percent=rand_percent, random_seed=rand_seed)
+# df
+df_train, df_test, df_validation, dict_indices = split_data.calc(processed_df, train_share, test_share, random_seed=rand_seed)
+df = df_train
+'''
+################################################
+########## BUILD A SINGLE TREE ON A TRAINING SET
+################################################'''
+# Build A SINGLE tree, using build_decision_tree on the whole training set
+print("\n" + "=" * 60 + "\n### BUILDING A SINGLE TREE ###" + "\n"+ ("=" * 60))
+single_tree = build_decision_tree(df_train,
+                                  features_train,
+                                  max_depth,
+                                  gini_threshold,
+                                  min_group,
+                                  death_threshold)
+print_tree_structure(single_tree)
+single_tree_prediction = predict_batch(single_tree, df_train, features_train, death_threshold)
+accuracy_ratio = single_tree_prediction['accuracy'].mean()
+score = single_tree_prediction['accuracy'].sum()
+print(f"Accuracy of a single tree on the training data = {accuracy_ratio:.2%}\n")
 
-# Build A SINGLE tree, using build_decision_tree on the slice
-print("\n" + "=" * 60 + "\n### BUILDING DECISION TREE ###" + "\n"+ ("=" * 60))
-tree = build_decision_tree(df, features_train, max_depth, gini_threshold=gini_threshold, min_group=min_group)
+time2 = time()
 
-# Print the first example tree structure
-print("\n" + "=" * 60 + "\n### DECISION TREE STRUCTURE ###" + "\n" + ("=" * 60))
-print(f"Root: size={tree['size']}, survival_rate={tree['survival_rate']:.2%}")
-# use print_tree function
-if not tree['leaf']:
-    print_tree(tree['left'], "", True)
-    print_tree(tree['right'], "", False)
-print("=" * 60)
-print(f"Final score of the obtained tree on training data: {total_score} out of {tree['size']}, giving {total_score/tree['size']:.2%} accuracy")
-########## BUILD A SINGLE TREE ON A RANDOM SLICE
-
-time2 = time.time()
-
+'''
+#####################################
+########## TRAIN THE FOREST 
+#####################################
+'''
 # Train set of trees on random data slices
 # random_seed is here useless
-tree_best, df_trained, final_accuracy, best_index, trained_trees = train_trees(processed_df, percent=rand_percent, sessions=rand_sessions)
-tree_predictions = predict_batch(tree_best, df_trained, features_all)
+# df_trained - df na którym trenował
+tree_best, df_trained, final_accuracy, best_index, trained_trees = train_trees(df_train, percent=rand_percent,
+                                                                               sessions=n_estimators,
+                                                                               max_depth=max_depth,
+                                                                               gini_threshold=gini_threshold,
+                                                                               min_group=min_group,
+                                                                               death_threshold=death_threshold )
+tree_predictions = predict_batch(tree_best, df_trained, features_train, death_threshold)
 accuracy_ratio = tree_predictions['accuracy'].mean()
 score = tree_predictions['accuracy'].sum()
 # Results for decision tree training
@@ -617,32 +680,47 @@ print(f"Final score of the obtained tree No.{best_index}: \n\t"
       f"on its own set No.{best_index}: {score} out of {tree_best['size']}, giving {accuracy_ratio:.2%} accuracy, \n\t "
       f"on all training data: {final_accuracy:.2%} averaged.")
 
-time3 = time.time()
+time3 = time()
 
-# Print the best trained tree structure
-tree = tree_best
-print("\n" + "=" * 60 + "\n### DECISION TREE STRUCTURE ###" + "\n" + ("=" * 60))
-print(f"Root: size={tree_best['size']}, survival_rate={tree_best['survival_rate']:.2%}")
-# use print_tree function
-if not tree_best['leaf']:
-    print_tree(tree_best['left'], "", True)
-    print_tree(tree_best['right'], "", False)
-print("=" * 60)
+# # Print the best trained tree structure
+# tree = tree_best
+# print_tree_structure(tree)
 
-# Results for decision tree training - repeat printing
-print(f"Final score of the obtained tree No.{best_index}: \n\t"
-      f"on its own set No.{best_index}: {score} out of {tree_best['size']}, giving {accuracy_ratio:.2%} accuracy,\n\t "
-      f"on all training data: {final_accuracy:.2%} averaged.")
 
-# Test predictions on the full dataset (processed_df)
-best_tree_prediction = predict_batch(tree_best, processed_df, features_all)
+# Test predictions of THE BEST TREE on the full dataset (processed_df)
+best_tree_prediction = predict_batch(tree_best, df_validation, features_train, death_threshold)
 accuracy_ratio=best_tree_prediction['accuracy'].mean()
-print(f"Accuracy on full data = {accuracy_ratio:.2%}\n")
+print(f"Accuracy on the validation data = {accuracy_ratio:.2%}\n")
 
-# Predictions of the random forest
-predict_RF = predict_ensemble(trained_trees, processed_df, features_all, threshold=0.5)
+'''
+############################################
+#### FINAL Predictions of the random forest on the training data
+############################################'''
+predict_RF = predict_ensemble(trained_trees, df_train, features_train, threshold=0.5)
 RF_score = predict_RF['accuracy'].mean()
-print(f"Accuracy of the Random Forest algorithm = {RF_score:.2%}\n")
+print(f"Accuracy of the Random Forest algorithm on the training data = {RF_score:.2%}\n")
+'''
+############################################
+#### FINAL Predictions of the random forest on the test data
+############################################'''
+predict_RF = predict_ensemble(trained_trees, df_test, features_train, threshold=0.5)
+RF_score = predict_RF['accuracy'].mean()
+print(f"Accuracy of the Random Forest algorithm on the test data = {RF_score:.2%}\n")
+'''
+############################################
+#### FINAL Predictions of the random forest on the validation data
+############################################'''
+predict_RF = predict_ensemble(trained_trees, df_validation, features_train, threshold=0.5)
+RF_score = predict_RF['accuracy'].mean()
+print(f"Accuracy of the Random Forest algorithm on the validation data = {RF_score:.2%}\n")
+'''
+############################################
+#### FINAL Predictions of the random forest on the full data
+############################################'''
+predict_RF = predict_ensemble(trained_trees, processed_df, features_train, threshold=0.5)
+RF_score = predict_RF['accuracy'].mean()
+print(f"Accuracy of the Random Forest algorithm on the full data = {RF_score:.2%}\n")
+
 
 '''
 # RF PERFORMANCE
@@ -674,21 +752,90 @@ print(f"Accuracy of the Random Forest algorithm = {RF_score:.2%}\n")
 # max_depth=13, mingroup=1, train on 80% and 20 trees= 97.98% vs 94.28% for a single tree, 27.1sec
 '''
 
-''' DODAĆ 
-1. Dodać system rozpoznający kluczowe zmienne spośród zadanych i wybiera które bierze do analizy
-2. Dodać samooptymalizację głębokości drzewa (da się?)
-3. Rozdzielić funkcję na main i powiększyć opcje 
-4. Dodać cross-validation matrix czy coś, korelacje pomiędzy zmiennymi
-5. dodać, by dane do testowania były usuwane z danych do uczenia modelu 
-'''
 
-time4 = time.time()
+time4 = time()
 
 #ADD PRINTING TO A FILE
 # # for idx, row in df.iterrows():
 # #     df_predictions['predictions']==df_predictions['real status']:
 # if df_predictions['predictions'] == df_predictions['real status']:
 
+'''
+############################################
+#### Random Search for the hyperparameters
+############################################'''
+def hyperparameter_search(do=True):
+    # Parametry Random Search
+    n_iterations = 10  # Liczba kombinacji do przetestowania
+    random_seed = 42
+
+    np.random.seed(random_seed)
+
+    results = []
+
+    if do==True:
+        print(f"Testowanie {n_iterations} kombinacji hiperparametrów...")
+        print("-" * 80)
+        ##### przeszukiwanie hiperparametrów
+        for i in range(n_iterations):
+            print("=" * 80)
+            print(f"Kombinacja {i+1} losowej kombinacji hiperparametrów...")
+            print("=" * 80)
+            # Losowanie hiperparametrów z zadanych zakresów
+            # min_group = np.random.randint(2, 10)  # 2-9 (1 < min_group < 10)
+            min_group = 3
+            # max_depth = np.arange(3, (3+n_iterations*2), 2)[i-1]  # testowanie 3-14 (2 < max_depth < 15)
+            max_depth = 10
+            # gini_threshold = np.random.randint(1, 5)/100
+            gini_threshold = 0.01
+            # death_threshold = np.random.randint(2, 8)/10
+            death_threshold = 0.6
+            # n_estimators = np.random.randint(1, 6)*5  # 3-29 (2 < n_estimators < 30)
+            # n_estimators = np.arange(3, (3+n_iterations*4), 4)[i-1]  # testowanie 3-14 (2 < max_depth < 15)
+            n_estimators = 20
+
+            s1_time = time()
+
+            try:
+                tree_best, df_trained, final_accuracy, best_index, trained_trees = train_trees(
+                    df_train,
+                    min_group=min_group,
+                    max_depth=max_depth,
+                    percent=rand_percent,
+                    gini_threshold=gini_threshold,
+                    death_threshold=death_threshold,
+                    sessions=n_estimators
+                )
+
+                training_time = time() - s1_time
+
+                test_accuracy = predict_ensemble(trained_trees, df_test, features_train, threshold=0.5)['accuracy'].mean()
+
+                results.append({
+                    'min_group': min_group,
+                    'max_depth': max_depth,
+                    'gini_threshold': round(gini_threshold, 4),
+                    'death_threshold': round(death_threshold, 4),
+                    'n_estimators': n_estimators,
+                    'test_accuracy': test_accuracy
+                    # 'training_time': training_time
+                })
+                print(f"Last RF accuracy: {test_accuracy:.6f}")
+
+            except Exception as e:
+                print(f"Błąd dla iteracji {i + 1}: {e}")
+
+        # Analiza wyników (jak wyżej)
+        results_df = pd.DataFrame(results)
+        results_df = results_df.sort_values('test_accuracy', ascending=False)
+        print("\n" + "=" * 80)
+        print("TOP 10 NAJLEPSZYCH KONFIGURACJI:")
+        print("=" * 80)
+        print(results_df.head(10).to_string(index=False))
+
+hyperparameter_search(False)
+
+time5 = time()
 
 # summary
 print("Trained on features: ")
@@ -696,16 +843,28 @@ print(features_train, "\n")
 
 
 # End timing
-end_time = time.time()
+end_time = time()
 exec1 = time1 - start_time
 exec2 = time2 - time1
 exec3 = time3 - time2
 exec4 = time4 - time3
+exec5 = time5 - time4
 execution_time = end_time - start_time
+print("=" * 80)
 print(f"Time part 1: {exec1:7.3f} seconds - loading modules and processing the data")
 print(f"Time part 2: {exec2:7.3f} seconds - single tree build time")
-print(f"Time part 3: {exec3:7.3f} seconds - full training of {rand_sessions} trees on {rand_percent/100:.1%} of data")
+print(f"Time part 3: {exec3:7.3f} seconds - full training of {n_estimators} trees on {rand_percent / 100:.1%} of data")
 print(f"In part 3:   {time_predictions:7.3f} seconds - spent on calculating accuracy/predictions")
 print(f"Time part 4: {exec4:7.3f} seconds - final testing")
+print(f"Time part 5: {exec4:7.3f} seconds - for random parameter search")
 print(f"Total execution time: {execution_time:.4f} seconds")
 
+
+''' DODAĆ 
+0. losowanie klasyfikatorów - wcale nie najlepiej dzielących
+1. Dodać system rozpoznający kluczowe zmienne spośród zadanych i wybiera które bierze do analizy
+2. Dodać samooptymalizację głębokości drzewa (da się?)
+3. Rozdzielić funkcję na main i powiększyć opcje 
+4. Dodać cross-validation matrix czy coś, korelacje pomiędzy zmiennymi
+5. dodać, by dane do testowania były usuwane z danych do uczenia modelu - zbiór treningowy, walidacyjny, testowy 
+'''

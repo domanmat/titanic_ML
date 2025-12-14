@@ -48,6 +48,8 @@ def check(df, detailed=True):
         print("=" * 60)
 
     # Display columns with missing df_processed (shown in both modes)
+    total_rows = df.shape[0]
+    print("Total rows count: ", total_rows)
     print("Columns with missing data:")
     # print("-" * 60)
 

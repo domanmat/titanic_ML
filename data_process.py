@@ -1,3 +1,5 @@
+import pandas as pd
+
 def calc(df,detailed):
     """
     Process the Titanic dataset by handling missing values and optimizing df_processed types.
@@ -17,7 +19,8 @@ def calc(df,detailed):
 
     # Handle missing values
     print("1. Filling missing values...")
-    processed_df['Age'] = processed_df['Age'].fillna(-1)
+    # Filling missing Age with -100
+    processed_df['Age'] = processed_df['Age'].fillna(-100)
     processed_df['Cabin'] = processed_df['Cabin'].fillna('None')
     processed_df['Embarked'] = processed_df['Embarked'].fillna('None')
 
@@ -34,17 +37,27 @@ def calc(df,detailed):
 
     # Data processing and types
     processed_df['Cabin'] = processed_df['Cabin'].astype(str).str[:10]
+
     processed_df['Age'] = (processed_df['Age'].round(2))
     processed_df['Age'] = (processed_df['Age'].astype('float32'))
+
     processed_df['Embarked'] = processed_df['Embarked'].astype(str).str[:5]
+
     processed_df['PassengerId'] = processed_df['PassengerId'].astype(int)
+
     processed_df['Name'] = processed_df['Name'].astype(str).str[:100]
+
     processed_df['Pclass'] = processed_df['Pclass'].astype('int8')
+
     processed_df['Survived'] = processed_df['Survived'].astype('int8')
+
     processed_df['Sex'] = processed_df['Sex'].map({'male': 0, 'female': 1})
     processed_df['Sex'] = processed_df['Sex'].astype('int8')
+
     processed_df['Parch'] = processed_df['Parch'].astype('int8')
+
     processed_df['SibSp'] = processed_df['SibSp'].astype('int8')
+
     processed_df['Fare'] = processed_df['Fare'].astype('float64')
     processed_df['Ticket'] = processed_df['Ticket'].astype(str).str[:100]
 

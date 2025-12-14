@@ -151,7 +151,7 @@ def analyze_categorical_associations(df, target='Survived', categorical_cols=Non
     Parameters:
     - df: DataFrame
     - target: target variable name
-    - categorical_cols: list of categorical column names (auto-detected if None)
+    - categorical_columns: list of categorical column names (auto-detected if None)
 
     Returns:
     - associations: Series of Cramér's V values
@@ -176,7 +176,7 @@ def analyze_categorical_associations(df, target='Survived', categorical_cols=Non
 
 
 def comprehensive_correlation_analysis(df, target, corr_threshold,
-                                       visualize, categorical_cols=None):
+                                       visualize, categorical_columns=None):
     """
     Perform complete correlation analysis including both numerical and categorical features.
 
@@ -185,7 +185,7 @@ def comprehensive_correlation_analysis(df, target, corr_threshold,
     - target: target variable name
     - corr_threshold: minimum correlation to report
     - visualize: whether to create plots
-    - categorical_cols: list of categorical columns for association analysis
+    - categorical_columns: list of categorical columns for association analysis
 
     Returns:
     - results: dictionary with correlation matrix, target correlations, and associations
@@ -218,7 +218,7 @@ def comprehensive_correlation_analysis(df, target, corr_threshold,
 
     # 2. Categorical associations (Cramér's V)
     print("\n[2/3] Calculating categorical feature associations...")
-    categorical_associations = analyze_categorical_associations(df, target, categorical_cols)
+    categorical_associations = analyze_categorical_associations(df, target, categorical_columns)
     results['categorical_associations'] = categorical_associations
 
     if len(categorical_associations) > 0:
@@ -283,7 +283,7 @@ def analyze_titanic_correlations(processed_df, enable_visualization=True):
         target='Survived',
         corr_threshold=0.01,
         visualize=enable_visualization,
-        categorical_cols=categorical_cols
+        categorical_columns=categorical_cols
     )
 
     return results
@@ -298,8 +298,8 @@ def analyze_titanic_correlations(processed_df, enable_visualization=True):
 #     target='Survived',
 #     corr_threshold=0.05,
 #     visualize=False,
-#     categorical_cols=['Pclass', 'Name', 'Sex', 'Ticket', 'Cabin', 'Embarked']
-#     # categorical_cols=None
+#     categorical_columns=['Pclass', 'Name', 'Sex', 'Ticket', 'Cabin', 'Embarked']
+#     # categorical_columns=None
 # )
 #
 # print(1)
