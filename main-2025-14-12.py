@@ -64,18 +64,7 @@ def calc_tree_node(df, features):
     left_group_best = None
     right_group_best = None
 
-    global max_features, features_percent
-    if (max_features == 'sqrt'):
-        k = max(1, int(np.sqrt(len(features))))
-        candidate_features = np.random.choice(features, size=k, replace=False)
-        # print(f"Using {len(candidate_features)} / {len(features)} features")
-    else:
-        k = int(len(features_train) * features_percent)
-        candidate_features = np.random.choice(features, size=k, replace=False)
-        # print(f"Using {len(candidate_features)} / {len(features)} features")
-
-    for feature in candidate_features:
-    # for feature in features:
+    for feature in features:
 
         # Sort the dataframe once
         sorted_df = df.sort_values(feature)
@@ -245,24 +234,10 @@ def build_decision_tree(df, features, max_depth, gini_threshold, min_group, deat
             'accuracy': accuracy
         }
     else:
-        best_gini = np.inf
-        best_left = None
-        best_right = None
-        best_feature = None
-        best_value = None
         # Perform split
         best_feature, best_split_param, best_w_gini, left_group, right_group = calc_tree_node(df, features)
         #prevent too small groups after splitting
-        if left_group is None or right_group is None:
-            return {
-                'leaf': True,
-                'depth': current_depth,
-                'size': len(df),
-                'gini': gini_branch,
-                'survival_rate': survival_r,
-                'accuracy': accuracy
-            }
-        elif len(left_group) < min_group or len (right_group) < min_group:
+        if len(left_group) < min_group or len (right_group) < min_group:
             # print(f"Depth {current_depth + 1}: Splitting down to group of lengths {len(left_group)} "
             #       f"and {len(right_group)} <= {min_group}, too small")
             # print("=" * 90)
@@ -295,7 +270,6 @@ def build_decision_tree(df, features, max_depth, gini_threshold, min_group, deat
                 'survival_rate': survival_r,
                 'accuracy': accuracy
             }
-
             # print("=" * 90)
             # # exit()
             # # Recursively build left and right branches
@@ -347,12 +321,11 @@ def train_df_slicing(df, percent, random_seed):
     if random_seed is not None:
         np.random.seed(random_seed)
 
-    n_samples = int(len(df) * percent / 100)
+    n_samples = int(len(df) * percent/100)
     indices = np.random.choice(len(df), size=n_samples, replace=True)
-
     sliced_df = df.iloc[indices].copy()
-    return sliced_df, indices
 
+    return sliced_df, indices
 
 
 def predict_batch(tree, df, features, death_threshold):
@@ -405,7 +378,6 @@ def predict_batch(tree, df, features, death_threshold):
     })
 
 
-
 def train_trees(train_df, percent, sessions, max_depth, gini_threshold, min_group, death_threshold):
 
     accuracy_ratio_best = 0
@@ -423,42 +395,27 @@ def train_trees(train_df, percent, sessions, max_depth, gini_threshold, min_grou
     for session in range(sessions):
         # random_seed if set would be useless
         df_tmp, train_indices = train_df_slicing(train_df, percent=percent, random_seed=None)
-        df_slices.append({
-            "train_df": df_tmp,
-            "train_indices": train_indices
-        })
+        df_slices.append(df_tmp)
 
     for session in range(sessions):
         print(f'Tree number {session + 1}')
         total_accuracy=0
 
         # Build tree
-        tree = build_decision_tree(df_slices[session]["train_df"], features_train, max_depth,
+        tree = build_decision_tree(df_slices[session], features_train, max_depth,
                                    gini_threshold, min_group, death_threshold)
 
         # Evaluate on all test sets
         accuracies = []
-        train_indices = df_slices[session]["train_indices"]
-        all_indices = np.arange(len(train_df))
+        for testing in range(sessions):
+            tree_predictions = predict_batch(tree, df_slices[testing], features_all, death_threshold)
+            accuracy_ratio = tree_predictions['accuracy'].mean()  # Faster than sum/len
+            accuracies.append(accuracy_ratio)
+            if testing==session:
+                print(f'Accuracy of tree {session + 1:2d} on set {testing + 1:2d}:  {accuracy_ratio:.2%}')
 
-        # próbki OOB
-        oob_mask = ~np.isin(all_indices, train_indices)
-        oob_indices = all_indices[oob_mask]
-
-        # jeśli nie ma OOB – pomijamy (rzadkie przy małym percent)
-        if len(oob_indices) == 0:
-            continue
-
-        df_oob = train_df.iloc[oob_indices]
-
-        tree_predictions = predict_batch(
-            tree,
-            df_oob,
-            features_all,
-            death_threshold
-        )
-
-        final_accuracy = tree_predictions["accuracy"].mean()
+        # Calculate average accuracy on all training data sets
+        final_accuracy = sum(accuracies) / sessions
         print(f'Average accuracy of tree {session+1:2d}:    {final_accuracy:.2%}')
         print("=" * 90)
 
@@ -466,9 +423,9 @@ def train_trees(train_df, percent, sessions, max_depth, gini_threshold, min_grou
         trained_trees.append({
             'tree': tree,
             'session_index': session,
-            'oob_accuracy': final_accuracy,
-            'n_oob_samples': len(df_oob),
-            'train_indices': train_indices
+            'training_data': df_slices[session],
+            'accuracies': accuracies,
+            'average_accuracy': final_accuracy
         })
 
         # Update the best tree
@@ -477,35 +434,9 @@ def train_trees(train_df, percent, sessions, max_depth, gini_threshold, min_grou
             accuracy_ratio_best = final_accuracy
             tree_best = tree
             best_index = session + 1
-            df_trained = df_slices[session]["train_df"]
+            df_trained = df_slices[session]
 
     return tree_best, df_trained, accuracy_ratio_best, best_index, trained_trees
-
-def oob_forest_score(trained_trees, train_df):
-    votes = {i: [] for i in range(len(train_df))}
-
-    for tree_data in trained_trees:
-        tree = tree_data["tree"]
-        train_idx = tree_data["train_indices"]
-
-        oob_mask = ~np.isin(np.arange(len(train_df)), train_idx)
-        oob_idx = np.where(oob_mask)[0]
-
-        if len(oob_idx) == 0:
-            continue
-
-        preds = predict_batch(tree, train_df.iloc[oob_idx], features_all, death_threshold)
-
-        for i, idx in enumerate(oob_idx):
-            votes[idx].append(preds["predictions"].iloc[i])
-
-    y_true, y_pred = [], []
-    for idx, v in votes.items():
-        if len(v) > 0:
-            y_true.append(train_df.iloc[idx]["Survived"])
-            y_pred.append(int(np.mean(v) >= 0.5))
-
-    return np.mean(np.array(y_true) == np.array(y_pred))
 
 
 def predict_ensemble(trained_trees, df, features_all, threshold):
@@ -682,12 +613,8 @@ min_group = 3
 max_depth = 6
 gini_threshold = 0.01
 death_threshold = 0.6
-n_estimators = 20
-rand_seed = 42
-
-#max_features = "sqrt"
-max_features=None
-features_percent=0.8
+n_estimators = 10
+rand_seed = None
 
 rand_percent = 50 #percent of how much df_train is used for each single tree
 train_share = 0.6
@@ -739,16 +666,12 @@ time2 = time()
 # Train set of trees on random data slices
 # random_seed is here useless
 # df_trained - df na którym trenował
-tree_best, df_trained, final_accuracy, best_index, trained_trees = train_trees(df_train,
-                                                                               percent=rand_percent,
+tree_best, df_trained, final_accuracy, best_index, trained_trees = train_trees(df_train, percent=rand_percent,
                                                                                sessions=n_estimators,
                                                                                max_depth=max_depth,
                                                                                gini_threshold=gini_threshold,
                                                                                min_group=min_group,
                                                                                death_threshold=death_threshold )
-oob_score = oob_forest_score(trained_trees, df_train)
-print(f"OOB accuracy of the Random Forest = {oob_score:.2%}")
-
 tree_predictions = predict_batch(tree_best, df_trained, features_train, death_threshold)
 accuracy_ratio = tree_predictions['accuracy'].mean()
 score = tree_predictions['accuracy'].sum()
@@ -827,11 +750,11 @@ def hyperparameter_search_1d(do=True, n_repeats=5):
     }
 
     PARAM_RANGES = {
-        "min_group": range(2, 6, 1),
+        "min_group": range(2, 5, 1),
         "max_depth": range(4, 12, 1),
         "gini_threshold": np.arange(0.01, 0.05, 0.01),
         "death_threshold": np.arange(0.2, 0.7, 0.1),
-        "n_estimators": range(6, 40, 2)
+        "n_estimators": range(6, 18, 2)
     }
 
     print("Skanowanie hiperparametrów (1D – jeden parametr naraz)")
@@ -900,7 +823,7 @@ def hyperparameter_search_1d(do=True, n_repeats=5):
 
     return results_df
 
-hyperparameter_search_1d(True)
+hyperparameter_search_1d(False)
 
 time5 = time()
 
@@ -920,7 +843,7 @@ execution_time = end_time - start_time
 print("=" * 80)
 print(f"Time part 1: {exec1:7.3f} seconds - loading modules and processing the data")
 print(f"Time part 2: {exec2:7.3f} seconds - single tree build time")
-print(f"Time part 3: {exec3:7.3f} seconds - full training of {n_estimators} trees on {train_share / 100:.1%} of data")
+print(f"Time part 3: {exec3:7.3f} seconds - full training of {n_estimators} trees on {rand_percent / 100:.1%} of data")
 print(f"In part 3:   {time_predictions:7.3f} seconds - spent on calculating accuracy/predictions")
 print(f"Time part 4: {exec4:7.3f} seconds - final testing")
 print(f"Time part 5: {exec5:7.3f} seconds - for hyperparameter search")
