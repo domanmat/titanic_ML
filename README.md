@@ -1,6 +1,6 @@
 # Titanic Survival Prediction - Random Forest from Scratch
 
-A complete **Random Forest** implementation built from scratch in Python to predict passenger survival on the Titanic dataset. No scikit-learn for the core algorithm - everything is coded manually!
+A complete **Random Forest** implementation built from scratch in Python to predict passenger survival on the Titanic dataset. No scikit-learn for the core algorithm - coded from scratch to deep-dive into the algorithm to learn its rules and behavior.  
 
 ## What This Does
 
